@@ -1,0 +1,8 @@
+$Name = "NeoXtart"
+? "Hello $Name"
+$Old = SetOption("NoVarsInStrings", "ON")
+? "Hello $Name"
+? $Old
+$Old = SetOption("NoVarsInStrings", "ON")
+? "Hello $Name"
+? $Old

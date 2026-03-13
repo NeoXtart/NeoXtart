@@ -1,0 +1,18 @@
+$var_i16 i16 = 33
+$var_f64 f64 = 3.14
+$var_bool bool = 0
+$var_infer = "ola"
+$var_runtime run = "opa"
+
+function hello($value run)
+    dim
+        $value1 run,
+        $value2 str,
+        $value3 bool
+    
+    if typeof($value) is bool
+        "Value is boolean $value"
+    else if typeof($value) is f64
+        "Value is float64 $value"
+    endif
+endfunction

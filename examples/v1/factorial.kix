@@ -1,0 +1,9 @@
+function Fact($n)
+    if $n <= 1
+        $Fact = 1
+    else
+        $Fact = $n * Fact($n - 1)
+    endif
+endfunction
+
+Fact(5)

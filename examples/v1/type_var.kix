@@ -1,0 +1,18 @@
+$var_int = 33
+$var_f64 = 3.14
+$var_bool = !1 ;Ele nega a verdade (1), logo é false(0) e o kixtart original tipava como Boolean.
+$var_infer = "ola"
+$var_runtime = "opa"
+
+function hello($value run)
+    dim
+        $value1,
+        $value2,
+        $value3
+    
+    if vartypename($value) == "Boolean"
+        "Value is boolean $value"
+    else if vartypename($value) == "Double"
+        "Value is double $value"
+    endif
+endfunction

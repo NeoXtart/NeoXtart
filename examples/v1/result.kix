@@ -1,0 +1,5 @@
+function Double($n)
+    result $n * 2
+endfunction
+
+Double(21)
