@@ -9,7 +9,8 @@ const block_terminators = ['ELSE', 'ENDIF', 'CASE', 'ENDSELECT', 'LOOP', 'UNTIL'
 const raw_command_names = ['DISPLAY', 'INCLUDE', 'RUN', 'SHELL', 'USE', 'PLAY', 'PASSWORD', 'SET', 'SETL', 'SETM', 'SETTIME']
 const statement_names = ['AT', 'BIG', 'BOX', 'BREAK', 'CALL', 'CLS', 'COLOR', 'DIM', 'DO', 'EXIT', 'FOR', 'FUNCTION', 'GET', 'GETS', 'GLOBAL', 'GOSUB', 'GOTO', 'IF', 'RESULT', 'RETURN', 'SELECT', 'SLEEP', 'SMALL', 'WHILE']
 const prefix_operators = ['NOT']
-const infix_operators = ['AND', 'OR', 'MOD']
+const infix_operators = ['AND', 'OR', 'MOD', 'IS']
+const type_names = ['BOOL', 'F32', 'F64', 'I8', 'I16', 'I32', 'I64', 'INT', 'RUN', 'STR', 'STRING']
 
 pub struct Parser {
 	source source.Source
@@ -72,7 +73,7 @@ fn (mut p Parser) parse_statement() !ast.Stmt {
 			}
 		}
 		.var_ref {
-			if p.peek().kind == .assign || p.peek().kind == .lsbr {
+			if p.looks_like_assignment() {
 				return p.parse_assignment()
 			}
 			return p.parse_display_stmt()
@@ -141,10 +142,16 @@ fn (mut p Parser) parse_assignment() !ast.Stmt {
 		index_expr = p.parse_expression()!
 		p.expect(.rsbr)!
 	}
+	mut type_name := ''
+	if p.current().kind == .name && p.is_type_name_token(p.current()) {
+		type_name = p.current().lexeme
+		p.advance()
+	}
 	p.expect(.assign)!
 	value := p.parse_assignment_value()!
 	return ast.AssignStmt{
 		target: target
+		type_name: type_name
 		index: if has_index { index_expr } else { ast.EmptyExpr{} }
 		value: value
 		span: diag.Span{
@@ -165,9 +172,12 @@ fn (mut p Parser) parse_display_stmt() !ast.Stmt {
 fn (mut p Parser) parse_decl_stmt(is_global bool) !ast.Stmt {
 	start := p.current().span
 	p.advance()
+	p.skip_newlines()
 	mut decls := []ast.VarDecl{}
 	for {
+		p.skip_newlines()
 		decls << p.parse_var_decl()!
+		p.skip_newlines()
 		if !p.match_kind(.comma) {
 			break
 		}
@@ -200,12 +210,31 @@ fn (mut p Parser) parse_var_decl() !ast.VarDecl {
 			p.expect(.rsbr)!
 		}
 	}
+	mut type_name := ''
+	if p.current().kind == .name && p.is_type_name_token(p.current()) {
+		type_name = p.current().lexeme
+		p.advance()
+	}
+	mut value := ast.Expr(ast.EmptyExpr{})
+	if p.match_kind(.assign) {
+		value = p.parse_expression()!
+	}
 	return ast.VarDecl{
 		name: name_tok.lexeme
+		type_name: type_name
+		value: value
 		dimensions: dimensions
 		span: diag.Span{
 			start: name_tok.span.start
-			end: if dimensions.len > 0 { ast.span_of_expr(dimensions[dimensions.len - 1]).end } else { name_tok.span.end }
+			end: if value !is ast.EmptyExpr {
+				ast.span_of_expr(value).end
+			} else if dimensions.len > 0 {
+				ast.span_of_expr(dimensions[dimensions.len - 1]).end
+			} else if type_name.len > 0 {
+				p.previous().span.end
+			} else {
+				name_tok.span.end
+			}
 		}
 	}
 }
@@ -418,7 +447,11 @@ fn (mut p Parser) parse_if_stmt() !ast.Stmt {
 	mut else_body := []ast.Stmt{}
 	if p.current().is_name('ELSE') {
 		p.advance()
-		else_body = p.parse_statement_list(['ENDIF'])!
+		if p.current().is_name('IF') {
+			else_body << p.parse_else_if_stmt()!
+		} else {
+			else_body = p.parse_statement_list(['ENDIF'])!
+		}
 	}
 	end_tok := p.expect_name('ENDIF')!
 	return ast.IfStmt{
@@ -428,6 +461,38 @@ fn (mut p Parser) parse_if_stmt() !ast.Stmt {
 		span: diag.Span{
 			start: start.start
 			end: end_tok.span.end
+		}
+	}
+}
+
+fn (mut p Parser) parse_else_if_stmt() !ast.Stmt {
+	start := p.current().span
+	p.expect_name('IF')!
+	condition := p.parse_expression()!
+	then_body := p.parse_statement_list(['ELSE', 'ENDIF'])!
+	mut else_body := []ast.Stmt{}
+	if p.current().is_name('ELSE') {
+		p.advance()
+		if p.current().is_name('IF') {
+			else_body << p.parse_else_if_stmt()!
+		} else {
+			else_body = p.parse_statement_list(['ENDIF'])!
+		}
+	}
+	end_pos := if else_body.len > 0 {
+		ast.span_of_stmt(else_body[else_body.len - 1]).end
+	} else if then_body.len > 0 {
+		ast.span_of_stmt(then_body[then_body.len - 1]).end
+	} else {
+		ast.span_of_expr(condition).end
+	}
+	return ast.IfStmt{
+		condition: condition
+		then_body: then_body
+		else_body: else_body
+		span: diag.Span{
+			start: start.start
+			end: end_pos
 		}
 	}
 }
@@ -556,8 +621,14 @@ fn (mut p Parser) parse_function_decl() !ast.Stmt {
 					false
 				}
 				param_tok := p.expect(.var_ref)!
+				mut type_name := ''
+				if p.current().kind == .name && p.is_type_name_token(p.current()) {
+					type_name = p.current().lexeme
+					p.advance()
+				}
 				params << ast.Parameter{
 					name: param_tok.lexeme
+					type_name: type_name
 					optional: optional
 					span: param_tok.span
 				}
@@ -815,6 +886,7 @@ fn (p Parser) current_precedence() int {
 		return match tok.upper {
 			'OR' { 1 }
 			'AND' { 2 }
+			'IS' { 4 }
 			'MOD' { 5 }
 			else { -1 }
 		}
@@ -850,6 +922,14 @@ fn (p Parser) should_end_statement() bool {
 	return current.kind == .name && current.upper in block_terminators
 }
 
+fn (p Parser) looks_like_assignment() bool {
+	next := p.peek()
+	if next.kind in [.assign, .lsbr] {
+		return true
+	}
+	return next.kind == .name && p.is_type_name_token(next)
+}
+
 fn (mut p Parser) skip_expression_newlines() {
 	for p.current().kind == .newline {
 		previous := p.previous()
@@ -870,6 +950,16 @@ fn (p Parser) is_expression_joiner(tok token.Token) bool {
 		return true
 	}
 	return false
+}
+
+fn (mut p Parser) skip_newlines() {
+	for p.current().kind == .newline {
+		p.advance()
+	}
+}
+
+fn (p Parser) is_type_name_token(tok token.Token) bool {
+	return tok.kind == .name && tok.upper in type_names
 }
 
 fn (mut p Parser) expect(kind token.Kind) !token.Token {

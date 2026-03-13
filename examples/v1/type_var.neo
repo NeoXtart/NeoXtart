@@ -1,18 +1,30 @@
 $var_i16 i16 = 33
 $var_f64 f64 = 3.14
-$var_bool bool = 0
+$var_bool bool = 1
 $var_infer = "ola"
 $var_runtime run = "opa"
 
 function hello($value run)
     dim
-        $value1 run,
-        $value2 str,
-        $value3 bool
+        $value1 run = 33.4,
+        $value2 str = "Hello, World!",
+        $value3 bool,
+        $value4
     
     if typeof($value) is bool
         "Value is boolean $value"
     else if typeof($value) is f64
         "Value is float64 $value"
+    else
+        ? "value1 = $value1"
+        ? "value2 = $value2"
+        ? "value3 = $value3"
+        ? "value4 = $value4"
+        ? "typeof(value4) = " + typeof($value4)
     endif
+
 endfunction
+
+? hello($var_bool)
+? hello($var_f64)
+? hello($var_runtime)

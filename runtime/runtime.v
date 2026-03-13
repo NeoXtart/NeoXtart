@@ -67,8 +67,8 @@ struct Engine {
 mut:
 	current_dir string
 	options     EngineOptions
-	globals     map[string]Value
-	scope_stack []map[string]Value
+	globals     map[string]Binding
+	scope_stack []map[string]Binding
 	functions   map[string]ast.FunctionDecl
 	scripts     map[string]Program
 	stack       []string
@@ -90,7 +90,10 @@ pub fn run_file(path string, options RunOptions) !RunResult {
 	}
 	mut engine := new_engine(base_dir, options)
 	for key, value in options.vars {
-		engine.globals[key.to_upper()] = string_value(value)
+		engine.globals[key.to_upper()] = Binding{
+			value: string_value(value)
+			type_name: 'run'
+		}
 	}
 	program := engine.load_cached_program(resolved.path)!
 	engine.execute_program(program)!
@@ -127,8 +130,8 @@ fn new_engine(base_dir string, options RunOptions) Engine {
 		emit_console: options.emit_console
 		stdin_lines: options.stdin_lines.clone()
 		options: EngineOptions{}
-		globals: map[string]Value{}
-		scope_stack: []map[string]Value{}
+		globals: map[string]Binding{}
+		scope_stack: []map[string]Binding{}
 		functions: map[string]ast.FunctionDecl{}
 		scripts: map[string]Program{}
 		dir_handles: map[int]DirState{}
@@ -250,7 +253,7 @@ fn (mut e Engine) execute_stmt(stmt ast.Stmt, mut frame Frame) !Control {
 		}
 		ast.AssignStmt {
 			value := e.eval_expr(stmt.value, frame.program.source)!
-			e.assign(stmt.target, stmt.index, value, frame.program.source)!
+			e.assign(stmt.target, stmt.type_name, stmt.index, value, frame.program.source, stmt.span)!
 			e.set_success('')
 		}
 		ast.DimStmt {
@@ -294,7 +297,7 @@ fn (mut e Engine) execute_stmt(stmt ast.Stmt, mut frame Frame) !Control {
 		}
 		ast.GetStmt {
 			input := e.read_input(stmt.line_mode)
-			e.assign(stmt.var_name, ast.EmptyExpr{}, string_value(input), frame.program.source)!
+			e.assign(stmt.var_name, '', ast.EmptyExpr{}, string_value(input), frame.program.source, stmt.span)!
 			e.set_success('')
 		}
 		ast.IfStmt {
@@ -342,7 +345,7 @@ fn (mut e Engine) execute_stmt(stmt ast.Stmt, mut frame Frame) !Control {
 			step := if stmt.step is ast.EmptyExpr { i64(1) } else { (e.eval_expr(stmt.step, frame.program.source)!).as_i64()! }
 			mut current := start
 			for (step >= 0 && current <= finish) || (step < 0 && current >= finish) {
-				e.assign(stmt.var_name, ast.EmptyExpr{}, int_value(current), frame.program.source)!
+				e.assign(stmt.var_name, '', ast.EmptyExpr{}, int_value(current), frame.program.source, stmt.span)!
 				control := e.execute_block(stmt.body, mut frame)!
 				if control.kind != .none {
 					return control
@@ -357,7 +360,7 @@ fn (mut e Engine) execute_stmt(stmt ast.Stmt, mut frame Frame) !Control {
 				return error(e.diag(frame.program.source, stmt.span, 'NX0302', 'FOR EACH expects an array'))
 			}
 			for item in iterable.array_value {
-				e.assign(stmt.var_name, ast.EmptyExpr{}, item, frame.program.source)!
+				e.assign(stmt.var_name, '', ast.EmptyExpr{}, item, frame.program.source, stmt.span)!
 				control := e.execute_block(stmt.body, mut frame)!
 				if control.kind != .none {
 					return control
@@ -435,19 +438,54 @@ fn (mut e Engine) execute_call(script_name string, caller source.Source, span di
 }
 
 fn (mut e Engine) declare_local(decl ast.VarDecl, src source.Source) ! {
-	mut value := empty_value()
-	if decl.dimensions.len > 0 {
-		value = e.allocate_array(decl.dimensions, src)!
-	}
-	e.scope_stack[e.scope_stack.len - 1][decl.name.to_upper()] = value
+	e.scope_stack[e.scope_stack.len - 1][decl.name.to_upper()] = e.build_decl_binding(decl, src)!
 }
 
 fn (mut e Engine) declare_global(decl ast.VarDecl, src source.Source) ! {
-	mut value := empty_value()
-	if decl.dimensions.len > 0 {
-		value = e.allocate_array(decl.dimensions, src)!
+	e.globals[decl.name.to_upper()] = e.build_decl_binding(decl, src)!
+}
+
+fn (mut e Engine) build_decl_binding(decl ast.VarDecl, src source.Source) !Binding {
+	if decl.dimensions.len > 0 && decl.value !is ast.EmptyExpr {
+		return error(e.diag(src, decl.span, 'NX0504', 'array declarations do not support inline initializers yet'))
 	}
-	e.globals[decl.name.to_upper()] = value
+
+	mut explicit_type := 'run'
+	if decl.type_name.len > 0 {
+		explicit_type = normalize_type_name(decl.type_name) or {
+			return error(e.diag(src, decl.span, 'NX0501', err.msg()))
+		}
+	}
+
+	if decl.dimensions.len > 0 {
+		value := e.allocate_array(decl.dimensions, src)!
+		return Binding{
+			value: value
+			type_name: explicit_type
+		}
+	}
+
+	if decl.value !is ast.EmptyExpr {
+		initial := e.eval_expr(decl.value, src)!
+		target_type := if explicit_type != 'run' { explicit_type } else { infer_type_name(initial) }
+		coerced := if target_type == 'run' { initial } else { coerce_value_to_type(initial, target_type)! }
+		return Binding{
+			value: coerced
+			type_name: target_type
+		}
+	}
+
+	if explicit_type == 'run' {
+		return Binding{
+			value: empty_value()
+			type_name: 'run'
+		}
+	}
+
+	return Binding{
+		value: default_value_for_type(explicit_type)!
+		type_name: explicit_type
+	}
 }
 
 fn (mut e Engine) allocate_array(dimensions []ast.Expr, src source.Source) !Value {
@@ -464,41 +502,89 @@ fn (mut e Engine) allocate_array(dimensions []ast.Expr, src source.Source) !Valu
 	return array_value(items)
 }
 
-fn (mut e Engine) assign(name string, index_expr ast.Expr, value Value, src source.Source) ! {
+fn (mut e Engine) assign(name string, type_name string, index_expr ast.Expr, value Value, src source.Source, span diag.Span) ! {
 	normalized := name.to_upper()
 	if index_expr !is ast.EmptyExpr {
-		existing := e.lookup(normalized) or {
+		existing := e.lookup_binding(normalized) or {
 			return error(e.diag(src, ast.span_of_expr(index_expr), 'NX0303', 'array `${name}` is not declared'))
 		}
-		if existing.kind != .array {
+		if existing.value.kind != .array {
 			return error(e.diag(src, ast.span_of_expr(index_expr), 'NX0304', '`${name}` is not an array'))
 		}
 		index := int((e.eval_expr(index_expr, src)!).as_i64()!)
-		mut updated := existing.array_value.clone()
+		mut updated := existing.value.array_value.clone()
 		if index < 0 || index >= updated.len {
 			return error(e.diag(src, ast.span_of_expr(index_expr), 'NX0305', 'array index out of range'))
 		}
 		updated[index] = value
-		e.store(normalized, array_value(updated))
+		e.store_binding(normalized, Binding{
+			value: array_value(updated)
+			type_name: existing.type_name
+		})
 		return
 	}
 	if e.options.explicit && !e.is_declared(normalized) {
 		return error(e.diag(src, diag.Span{}, 'NX0306', 'variable `${name}` must be declared'))
 	}
-	e.store(normalized, value)
+	if existing := e.lookup_binding(normalized) {
+		if type_name.len > 0 {
+			normalized_type := normalize_type_name(type_name) or {
+				return error(e.diag(src, span, 'NX0501', err.msg()))
+			}
+			if existing.type_name != 'run' && existing.type_name != normalized_type {
+				return error(e.diag(src, span, 'NX0502', 'variable `${name}` is already typed as `${existing.type_name}`'))
+			}
+			coerced := if normalized_type == 'run' { value } else { coerce_value_to_type(value, normalized_type)! }
+			e.store_binding(normalized, Binding{
+				value: coerced
+				type_name: normalized_type
+			})
+			return
+		}
+		target_type := if existing.type_name == 'run' && existing.value.is_empty() {
+			infer_type_name(value)
+		} else {
+			existing.type_name
+		}
+		coerced := if target_type == 'run' { value } else { coerce_value_to_type(value, target_type)! }
+		e.store_binding(normalized, Binding{
+			value: coerced
+			type_name: target_type
+		})
+		return
+	}
+	target_type := if type_name.len > 0 {
+		normalize_type_name(type_name) or {
+			return error(e.diag(src, span, 'NX0501', err.msg()))
+		}
+	} else {
+		infer_type_name(value)
+	}
+	coerced := if target_type == 'run' { value } else { coerce_value_to_type(value, target_type)! }
+	e.store_binding(normalized, Binding{
+		value: coerced
+		type_name: target_type
+	})
 }
 
-fn (mut e Engine) store(name string, value Value) {
+fn (mut e Engine) store_binding(name string, binding Binding) {
 	for index := e.scope_stack.len - 1; index >= 0; index-- {
 		if name in e.scope_stack[index] {
-			e.scope_stack[index][name] = value
+			e.scope_stack[index][name] = binding
 			return
 		}
 	}
-	e.globals[name] = value
+	e.globals[name] = binding
 }
 
 fn (e Engine) lookup(name string) ?Value {
+	if binding := e.lookup_binding(name) {
+		return binding.value
+	}
+	return none
+}
+
+fn (e Engine) lookup_binding(name string) ?Binding {
 	for index := e.scope_stack.len - 1; index >= 0; index-- {
 		if name in e.scope_stack[index] {
 			return e.scope_stack[index][name]
@@ -523,7 +609,7 @@ fn (e Engine) is_declared(name string) bool {
 }
 
 fn (mut e Engine) push_scope() {
-	e.scope_stack << map[string]Value{}
+	e.scope_stack << map[string]Binding{}
 }
 
 fn (mut e Engine) pop_scope() {

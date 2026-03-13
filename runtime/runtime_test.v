@@ -116,6 +116,75 @@ fn test_runtime_call_shares_globals() {
 	assert result.output == 'root-child'
 }
 
+fn test_runtime_supports_static_types_run_and_typeof() {
+	result := run_inline([
+		'$' + 'var_i16 i16 = 33'
+		'$' + 'var_f64 f64 = 3.14'
+		'$' + 'var_bool bool = 0'
+		'$' + 'var_infer = "ola"'
+		'$' + 'var_runtime run = "opa"'
+		''
+		'function hello(' + '$' + 'value run)'
+		'    dim'
+		'        ' + '$' + 'value1 run,'
+		'        ' + '$' + 'value2 str,'
+		'        ' + '$' + 'value3 bool'
+		'    if typeof(' + '$' + 'value) is bool'
+		'        "Value is boolean ' + '$' + 'value"'
+		'    else if typeof(' + '$' + 'value) is f64'
+		'        "Value is float64 ' + '$' + 'value"'
+		'    endif'
+		'endfunction'
+		''
+		'hello(' + '$' + 'var_bool)'
+		'hello(' + '$' + 'var_f64)'
+		'$' + 'var_i16'
+		'$' + 'var_infer'
+		'$' + 'var_runtime i16 = 7'
+		'$' + 'var_runtime'
+		''
+	].join('\n'))
+
+	assert result.exit_code == 0
+	assert result.output == 'Value is boolean 0Value is float64 3.1433ola7'
+}
+
+fn test_runtime_rejects_conflicting_explicit_type_annotation() {
+	_ := run_text([
+		'$' + 'value i16 = 1'
+		'$' + 'value str = "oops"'
+		''
+	].join('\n'), RunOptions{
+		current_dir: repo_root()
+		emit_console: false
+	}) or {
+		assert err.msg().contains('NX0502')
+		return
+	}
+	assert false
+}
+
+fn test_runtime_dim_initializers_and_defaults() {
+	result := run_inline([
+		'function demo()'
+		'    dim'
+		'        ' + '$' + 'value1 run = 33.4,'
+		'        ' + '$' + 'value2 str = "Hello, World!",'
+		'        ' + '$' + 'value3 bool,'
+		'        ' + '$' + 'value4'
+		'    ? "value1 = ' + '$' + 'value1"'
+		'    ? "value2 = ' + '$' + 'value2"'
+		'    ? "value3 = ' + '$' + 'value3"'
+		'    ? "value4 = ' + '$' + 'value4"'
+		'endfunction'
+		'demo()'
+		''
+	].join('\n'))
+
+	assert result.exit_code == 0
+	assert result.output == '\nvalue1 = 33.4\nvalue2 = Hello, World!\nvalue3 = 0\nvalue4 = '
+}
+
 fn test_samples_from_plan_parse_and_fail_as_expected() {
 	root := repo_root()
 	samples := [

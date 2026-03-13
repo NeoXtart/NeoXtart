@@ -20,7 +20,13 @@ fn (mut e Engine) eval_expr(expr ast.Expr, src source.Source) !Value {
 		ast.VarRefExpr { e.eval_var(expr, src) }
 		ast.MacroRefExpr { e.eval_macro(expr, src) }
 		ast.EnvRefExpr { string_value(os.getenv(expr.name.trim('%'))) }
-		ast.NameExpr { string_value(expr.name) }
+		ast.NameExpr {
+			match expr.name.to_upper() {
+				'TRUE' { bool_value(true) }
+				'FALSE' { bool_value(false) }
+				else { string_value(expr.name) }
+			}
+		}
 		ast.UnaryExpr { e.eval_unary(expr, src) }
 		ast.BinaryExpr { e.eval_binary(expr, src) }
 		ast.CallExpr { e.eval_call(expr, src) }
@@ -170,6 +176,10 @@ fn (mut e Engine) eval_binary(expr ast.BinaryExpr, src source.Source) !Value {
 		'OR' {
 			return int_value(if left.truthy() || right.truthy() { 1 } else { 0 })
 		}
+		'IS' {
+			left_type := if left.kind == .string { left.as_string() } else { left.neo_type_name() }
+			return int_value(if left_type.to_lower() == right.as_string().to_lower() { 1 } else { 0 })
+		}
 		else {
 			return error(e.diag(src, expr.span, 'NX0404', 'unsupported binary operator `${expr.op}`'))
 		}
@@ -293,9 +303,16 @@ fn (mut e Engine) call_user_function(name string, decl ast.FunctionDecl, args []
 		e.pop_scope()
 	}
 	return_slot := '$' + name
-	e.scope_stack[e.scope_stack.len - 1][return_slot] = empty_value()
+	e.scope_stack[e.scope_stack.len - 1][return_slot] = Binding{
+		value: empty_value()
+		type_name: 'run'
+	}
 	for index, param in decl.params {
-		e.scope_stack[e.scope_stack.len - 1][param.name.to_upper()] = if index < args.len { args[index] } else { empty_value() }
+		param_type := normalize_type_name(param.type_name) or { 'run' }
+		param_value := if index < args.len { args[index] } else { default_value_for_type(param_type) or { empty_value() } }
+		e.scope_stack[e.scope_stack.len - 1][param.name.to_upper()] = binding_from_value(param_type, param_value) or {
+			return error(e.diag(src, span, 'NX0503', 'failed to bind parameter `${param.name}` as `${param_type}`'))
+		}
 	}
 	mut frame := Frame{
 		program: Program{
@@ -451,6 +468,10 @@ fn (mut e Engine) call_builtin(name string, args []Value, src source.Source, spa
 		'SETOPTION' {
 			e.require_arg_count(name, args, 2, src, span)!
 			result = string_value(e.set_option_impl(args, src, span)!)
+		}
+		'TYPEOF' {
+			e.require_arg_count(name, args, 1, src, span)!
+			result = string_value(args[0].neo_type_name())
 		}
 		else {
 			return error(e.diag(src, span, 'NX1001', 'function `${name}` is not implemented yet'))

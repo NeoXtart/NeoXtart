@@ -57,6 +57,8 @@ pub:
 pub struct VarDecl {
 pub:
 	name       string
+	type_name  string
+	value      Expr = EmptyExpr{}
 	dimensions []Expr
 	span       diag.Span
 }
@@ -64,6 +66,7 @@ pub:
 pub struct Parameter {
 pub:
 	name     string
+	type_name string
 	optional bool
 	span     diag.Span
 }
@@ -93,10 +96,11 @@ pub:
 
 pub struct AssignStmt {
 pub:
-	target string
-	index  Expr = EmptyExpr{}
-	value  Expr
-	span   diag.Span
+	target    string
+	type_name string
+	index     Expr = EmptyExpr{}
+	value     Expr
+	span      diag.Span
 }
 
 pub struct DimStmt {

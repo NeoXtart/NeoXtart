@@ -48,6 +48,9 @@ The goal at this stage is to prioritize implementation readability, incremental 
 - NeoXtart adds the `RESULT [value]` keyword for explicit function returns.
 - Inside functions, the KiXtart-compatible style remains valid: assign the result to `$FunctionName`.
 - `RETURN` is reserved for `GOSUB` flow control.
+- NeoXtart supports optional static type annotations such as `i16`, `f64`, `bool`, `str`, and `run`.
+- `run` is the dynamic compatibility type: the value is resolved at runtime instead of being fixed ahead of time.
+- `typeof(...) is <type>` is supported as the preferred type-check syntax in `.neo` code.
 
 ### Temporary Implementation Gaps
 
@@ -99,6 +102,21 @@ Use:
 v run .\cmd\neoxtart run .\script.kix --var '$Name=Neo'
 ```
 
+### Declare Typed Variables
+
+Use the type after the variable name:
+
+```vb
+$count i16 = 33
+$price f64 = 3.14
+$flag bool = 0
+$message str = "hello"
+$dynamic run = "compatible"
+```
+
+If no type is provided, NeoXtart infers one from the first assigned value.
+The same pattern also works inside `DIM` and `GLOBAL` blocks, and typed declarations without an initializer receive a type-specific default value such as `0`, `0.0`, `""`, or `false`.
+
 ### Return a Function Value
 
 For KiXtart compatibility:
@@ -115,6 +133,18 @@ Or using the NeoXtart extension:
 function Double($n)
     result $n * 2
 endfunction
+```
+
+### Type-check a Runtime Value
+
+Use `typeof(...) is <type>`:
+
+```vb
+if typeof($value) is bool
+    "boolean"
+else if typeof($value) is f64
+    "float64"
+endif
 ```
 
 ### Add a New Builtin

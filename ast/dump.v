@@ -24,10 +24,13 @@ pub fn dump_stmt(stmt Stmt, level int) string {
 			if stmt.index !is EmptyExpr {
 				left += '[${dump_expr(stmt.index)}]'
 			}
+			if stmt.type_name.len > 0 {
+				left += ' ${stmt.type_name}'
+			}
 			'${pad}Assign(${left} = ${dump_expr(stmt.value)})'
 		}
-		DimStmt { '${pad}Dim(${stmt.decls.map(it.name).join(", ")})' }
-		GlobalStmt { '${pad}Global(${stmt.decls.map(it.name).join(", ")})' }
+		DimStmt { '${pad}Dim(${stmt.decls.map(format_decl(it)).join(", ")})' }
+		GlobalStmt { '${pad}Global(${stmt.decls.map(format_decl(it)).join(", ")})' }
 		BreakStmt { '${pad}Break(${stmt.enabled})' }
 		ClsStmt { '${pad}Cls' }
 		BigStmt { '${pad}Big' }
@@ -99,7 +102,7 @@ pub fn dump_stmt(stmt Stmt, level int) string {
 		GosubStmt { '${pad}Gosub(${dump_expr(stmt.label)})' }
 		CallStmt { '${pad}Call(${dump_expr(stmt.script)})' }
 		FunctionDecl {
-			mut lines := ['${pad}Function(${stmt.name}(${stmt.params.map(it.name).join(", ")}))']
+			mut lines := ['${pad}Function(${stmt.name}(${stmt.params.map(format_param(it)).join(", ")}))']
 			for child in stmt.body {
 				lines << dump_stmt(child, level + 1)
 			}
@@ -141,4 +144,22 @@ pub fn dump_expr(expr Expr) string {
 		UnaryExpr { '(' + expr.op + ' ' + dump_expr(expr.right) + ')' }
 		VarRefExpr { expr.name }
 	}
+}
+
+fn format_decl(decl VarDecl) string {
+	mut text := decl.name
+	if decl.type_name.len > 0 {
+		text += ' ${decl.type_name}'
+	}
+	if decl.value !is EmptyExpr {
+		text += ' = ${dump_expr(decl.value)}'
+	}
+	return text
+}
+
+fn format_param(param Parameter) string {
+	if param.type_name.len > 0 {
+		return '${param.name} ${param.type_name}'
+	}
+	return param.name
 }
