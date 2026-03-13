@@ -1,0 +1,1 @@
+v run ./cmd/neoxtart/main.v %~1 %~2 %3 %4
