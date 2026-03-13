@@ -1,6 +1,7 @@
 module runtime
 
-const supported_type_names = ['BOOL', 'F32', 'F64', 'I8', 'I16', 'I32', 'I64', 'INT', 'RUN', 'STR', 'STRING']
+const supported_type_names = ['BOOL', 'F32', 'F64', 'I8', 'I16', 'I32', 'I64', 'INT', 'RUN', 'STR',
+	'STRING']
 
 struct Binding {
 mut:
@@ -29,13 +30,31 @@ fn normalize_type_name(name string) !string {
 
 fn infer_type_name(value Value) string {
 	return match value.kind {
-		.boolean { 'bool' }
-		.double { 'f64' }
-		.integer { if value.type_name.len > 0 { value.type_name } else { 'i64' } }
-		.string { 'str' }
-		.array { 'run' }
-		.object { 'run' }
-		.empty { 'run' }
+		.boolean {
+			'bool'
+		}
+		.double {
+			'f64'
+		}
+		.integer {
+			if value.type_name.len > 0 {
+				value.type_name
+			} else {
+				'i64'
+			}
+		}
+		.string {
+			'str'
+		}
+		.array {
+			'run'
+		}
+		.object {
+			'run'
+		}
+		.empty {
+			'run'
+		}
 	}
 }
 
@@ -76,7 +95,7 @@ fn coerce_value_to_type(value Value, type_name string) !Value {
 fn binding_from_value(type_name string, value Value) !Binding {
 	normalized := normalize_type_name(type_name)!
 	return Binding{
-		value: if normalized == 'run' { value } else { coerce_value_to_type(value, normalized)! }
+		value:     if normalized == 'run' { value } else { coerce_value_to_type(value, normalized)! }
 		type_name: normalized
 	}
 }

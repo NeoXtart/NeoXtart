@@ -15,10 +15,18 @@ pub fn dump_script(script Script) string {
 pub fn dump_stmt(stmt Stmt, level int) string {
 	pad := indent(level)
 	return match stmt {
-		LabelStmt { '${pad}Label(${stmt.name})' }
-		NewlineStmt { '${pad}Newline' }
-		DisplayStmt { '${pad}Display(${dump_expr(stmt.expr)})' }
-		ExprStmt { '${pad}Expr(${dump_expr(stmt.expr)})' }
+		LabelStmt {
+			'${pad}Label(${stmt.name})'
+		}
+		NewlineStmt {
+			'${pad}Newline'
+		}
+		DisplayStmt {
+			'${pad}Display(${dump_expr(stmt.expr)})'
+		}
+		ExprStmt {
+			'${pad}Expr(${dump_expr(stmt.expr)})'
+		}
 		AssignStmt {
 			mut left := stmt.target
 			if stmt.index !is EmptyExpr {
@@ -29,18 +37,40 @@ pub fn dump_stmt(stmt Stmt, level int) string {
 			}
 			'${pad}Assign(${left} = ${dump_expr(stmt.value)})'
 		}
-		DimStmt { '${pad}Dim(${stmt.decls.map(format_decl(it)).join(", ")})' }
-		GlobalStmt { '${pad}Global(${stmt.decls.map(format_decl(it)).join(", ")})' }
-		BreakStmt { '${pad}Break(${stmt.enabled})' }
-		ClsStmt { '${pad}Cls' }
-		BigStmt { '${pad}Big' }
-		SmallStmt { '${pad}Small' }
-		ColorStmt { '${pad}Color(${stmt.raw})' }
-		AtStmt { '${pad}At(${dump_expr(stmt.row)}, ${dump_expr(stmt.col)})' }
+		DimStmt {
+			'${pad}Dim(${stmt.decls.map(format_decl(it)).join(', ')})'
+		}
+		GlobalStmt {
+			'${pad}Global(${stmt.decls.map(format_decl(it)).join(', ')})'
+		}
+		BreakStmt {
+			'${pad}Break(${stmt.enabled})'
+		}
+		ClsStmt {
+			'${pad}Cls'
+		}
+		BigStmt {
+			'${pad}Big'
+		}
+		SmallStmt {
+			'${pad}Small'
+		}
+		ColorStmt {
+			'${pad}Color(${stmt.raw})'
+		}
+		AtStmt {
+			'${pad}At(${dump_expr(stmt.row)}, ${dump_expr(stmt.col)})'
+		}
 		BoxStmt {
 			'${pad}Box(${dump_expr(stmt.top)}, ${dump_expr(stmt.left)}, ${dump_expr(stmt.bottom)}, ${dump_expr(stmt.right)}, ${dump_expr(stmt.style)})'
 		}
-		GetStmt { '${pad}${if stmt.line_mode { "Gets" } else { "Get" }}(${stmt.var_name})' }
+		GetStmt {
+			'${pad}${if stmt.line_mode {
+				'Gets'
+			} else {
+				'Get'
+			}}(${stmt.var_name})'
+		}
 		IfStmt {
 			mut lines := ['${pad}If(${dump_expr(stmt.condition)})']
 			for child in stmt.then_body {
@@ -92,17 +122,27 @@ pub fn dump_stmt(stmt Stmt, level int) string {
 			lines.join('\n')
 		}
 		ForEachStmt {
-			mut lines := ['${pad}ForEach(${stmt.var_name} IN ${dump_expr(stmt.iterable)})']
+			mut lines := [
+				'${pad}ForEach(${stmt.var_name} IN ${dump_expr(stmt.iterable)})',
+			]
 			for child in stmt.body {
 				lines << dump_stmt(child, level + 1)
 			}
 			lines.join('\n')
 		}
-		GotoStmt { '${pad}Goto(${dump_expr(stmt.label)})' }
-		GosubStmt { '${pad}Gosub(${dump_expr(stmt.label)})' }
-		CallStmt { '${pad}Call(${dump_expr(stmt.script)})' }
+		GotoStmt {
+			'${pad}Goto(${dump_expr(stmt.label)})'
+		}
+		GosubStmt {
+			'${pad}Gosub(${dump_expr(stmt.label)})'
+		}
+		CallStmt {
+			'${pad}Call(${dump_expr(stmt.script)})'
+		}
 		FunctionDecl {
-			mut lines := ['${pad}Function(${stmt.name}(${stmt.params.map(format_param(it)).join(", ")}))']
+			mut lines := [
+				'${pad}Function(${stmt.name}(${stmt.params.map(format_param(it)).join(', ')}))',
+			]
 			for child in stmt.body {
 				lines << dump_stmt(child, level + 1)
 			}
@@ -115,7 +155,9 @@ pub fn dump_stmt(stmt Stmt, level int) string {
 				'${pad}Result(${dump_expr(stmt.value)})'
 			}
 		}
-		ReturnStmt { '${pad}Return' }
+		ReturnStmt {
+			'${pad}Return'
+		}
 		ExitStmt {
 			if stmt.code is EmptyExpr {
 				'${pad}Exit'
@@ -123,8 +165,12 @@ pub fn dump_stmt(stmt Stmt, level int) string {
 				'${pad}Exit(${dump_expr(stmt.code)})'
 			}
 		}
-		SleepStmt { '${pad}Sleep(${dump_expr(stmt.duration)})' }
-		RawCommandStmt { '${pad}RawCommand(${stmt.name}: ${stmt.raw})' }
+		SleepStmt {
+			'${pad}Sleep(${dump_expr(stmt.duration)})'
+		}
+		RawCommandStmt {
+			'${pad}RawCommand(${stmt.name}: ${stmt.raw})'
+		}
 	}
 }
 

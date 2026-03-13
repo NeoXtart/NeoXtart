@@ -16,6 +16,8 @@ The goal at this stage is to prioritize implementation readability, incremental 
 - `runtime`: loader, options, values, builtins, and tree-walk execution.
 - `platform/windows`: Windows-specific integrations.
 - `examples/v1`: small and stable examples for the current supported subset.
+- `tests`: canonical home for language tests, grouped by subsystem.
+- `docs/progredindo-no-neoxtart.md`: PT-BR guide for continuing the project yourself.
 
 ## Execution Flow
 
@@ -31,7 +33,7 @@ The goal at this stage is to prioritize implementation readability, incremental 
 - `v run .\cmd\neoxtart dump-tokens .\examples\v1\factorial.kix`
 - `v run .\cmd\neoxtart dump-ast .\examples\v1\factorial.kix`
 - `v run .\cmd\neoxtart run .\examples\v1\call_main.kix`
-- `v test .`
+- `v test tests`
 
 ## Contribution Rules
 
@@ -39,7 +41,9 @@ The goal at this stage is to prioritize implementation readability, incremental 
 - Before introducing a new abstraction, confirm that it reduces real complexity in the parser or runtime.
 - Do not hide missing behavior. Use structured `NX1001` errors when a feature does not exist yet.
 - When adding new syntax or semantics, update examples and tests in the same commit.
+- Put new language tests under `tests/`, and keep test-only scripts under `tests/fixtures/scripts`.
 - Any future change to the language or runtime must update, in the same commit, the `NeoXtart vs KiXtart Differences` and `How To Do Things In NeoXtart` sections.
+- If the change affects contributor workflow, also update `docs/progredindo-no-neoxtart.md`.
 
 ## NeoXtart vs KiXtart Differences
 
@@ -152,8 +156,9 @@ endif
 1. Implement the logic in `runtime/builtins.v`.
 2. Register the name in the `call_builtin` match.
 3. If the builtin changes global state, prefer a small helper that is easy to test.
-4. Add a test in `runtime/runtime_test.v`.
+4. Add a test in `tests/runtime/runtime_test.v`.
 5. If it changes compatibility with KiXtart, update the `NeoXtart vs KiXtart Differences` section.
+6. Prefer documenting the workflow in `docs/progredindo-no-neoxtart.md` if it is a good first issue or learning task.
 
 ### Register a New Compatibility Divergence
 

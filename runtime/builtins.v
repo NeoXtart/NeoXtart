@@ -10,16 +10,29 @@ import platform.windows
 import source
 import source.diag
 
-const month_names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const month_names = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+	'September', 'October', 'November', 'December']
 
 fn (mut e Engine) eval_expr(expr ast.Expr, src source.Source) !Value {
 	return match expr {
-		ast.EmptyExpr { empty_value() }
-		ast.NumberLiteralExpr { e.eval_number_literal(expr) }
-		ast.StringLiteralExpr { string_value(e.resolve_string(expr.value, src)!) }
-		ast.VarRefExpr { e.eval_var(expr, src) }
-		ast.MacroRefExpr { e.eval_macro(expr, src) }
-		ast.EnvRefExpr { string_value(os.getenv(expr.name.trim('%'))) }
+		ast.EmptyExpr {
+			empty_value()
+		}
+		ast.NumberLiteralExpr {
+			e.eval_number_literal(expr)
+		}
+		ast.StringLiteralExpr {
+			string_value(e.resolve_string(expr.value, src)!)
+		}
+		ast.VarRefExpr {
+			e.eval_var(expr, src)
+		}
+		ast.MacroRefExpr {
+			e.eval_macro(expr, src)
+		}
+		ast.EnvRefExpr {
+			string_value(os.getenv(expr.name.trim('%')))
+		}
 		ast.NameExpr {
 			match expr.name.to_upper() {
 				'TRUE' { bool_value(true) }
@@ -27,11 +40,21 @@ fn (mut e Engine) eval_expr(expr ast.Expr, src source.Source) !Value {
 				else { string_value(expr.name) }
 			}
 		}
-		ast.UnaryExpr { e.eval_unary(expr, src) }
-		ast.BinaryExpr { e.eval_binary(expr, src) }
-		ast.CallExpr { e.eval_call(expr, src) }
-		ast.MemberExpr { e.eval_member(expr, src) }
-		ast.IndexExpr { e.eval_index(expr, src) }
+		ast.UnaryExpr {
+			e.eval_unary(expr, src)
+		}
+		ast.BinaryExpr {
+			e.eval_binary(expr, src)
+		}
+		ast.CallExpr {
+			e.eval_call(expr, src)
+		}
+		ast.MemberExpr {
+			e.eval_member(expr, src)
+		}
+		ast.IndexExpr {
+			e.eval_index(expr, src)
+		}
 		ast.ArrayLiteralExpr {
 			mut items := []Value{}
 			for item in expr.items {
@@ -304,29 +327,31 @@ fn (mut e Engine) call_user_function(name string, decl ast.FunctionDecl, args []
 	}
 	return_slot := '$' + name
 	e.scope_stack[e.scope_stack.len - 1][return_slot] = Binding{
-		value: empty_value()
+		value:     empty_value()
 		type_name: 'run'
 	}
 	for index, param in decl.params {
 		param_type := normalize_type_name(param.type_name) or { 'run' }
-		param_value := if index < args.len { args[index] } else { default_value_for_type(param_type) or { empty_value() } }
-		e.scope_stack[e.scope_stack.len - 1][param.name.to_upper()] = binding_from_value(param_type, param_value) or {
+		param_value := if index < args.len { args[index] } else { default_value_for_type(param_type) or {
+				empty_value()} }
+		e.scope_stack[e.scope_stack.len - 1][param.name.to_upper()] = binding_from_value(param_type,
+			param_value) or {
 			return error(e.diag(src, span, 'NX0503', 'failed to bind parameter `${param.name}` as `${param_type}`'))
 		}
 	}
 	mut frame := Frame{
-		program: Program{
+		program:     Program{
 			source: src
 			script: ast.Script{
-				path: src.path
+				path:       src.path
 				statements: decl.body
 			}
 			labels: build_label_index(ast.Script{
-				path: src.path
+				path:       src.path
 				statements: decl.body
 			})
 		}
-		kind: .function
+		kind:        .function
 		result_slot: return_slot
 	}
 	control := e.execute_frame(mut frame)!
@@ -344,7 +369,11 @@ fn (mut e Engine) call_builtin(name string, args []Value, src source.Source, spa
 	match name {
 		'ABS' {
 			e.require_arg_count(name, args, 1, src, span)!
-			result = if args[0].kind == .double { double_value(math.abs(args[0].double_value)) } else { int_value(i64(math.abs(f64(args[0].as_i64()!)))) }
+			result = if args[0].kind == .double {
+				double_value(math.abs(args[0].double_value))
+			} else {
+				int_value(i64(math.abs(f64(args[0].as_i64()!))))
+			}
 		}
 		'ASC' {
 			e.require_arg_count(name, args, 1, src, span)!
@@ -385,7 +414,8 @@ fn (mut e Engine) call_builtin(name string, args []Value, src source.Source, spa
 		}
 		'SUBSTR' {
 			e.require_arg_count(name, args, 3, src, span)!
-			result = string_value(substr(args[0].as_string(), int(args[1].as_i64()!), int(args[2].as_i64()!)))
+			result = string_value(substr(args[0].as_string(), int(args[1].as_i64()!),
+				int(args[2].as_i64()!)))
 		}
 		'LTRIM' {
 			e.require_arg_count(name, args, 1, src, span)!
@@ -505,7 +535,7 @@ fn (mut e Engine) dir_impl(args []Value) Value {
 			items: items.map(os.file_name(it))
 		}
 	}
-	if !(index in e.dir_handles) {
+	if index !in e.dir_handles {
 		return string_value('')
 	}
 	mut handle := e.dir_handles[index]
@@ -581,7 +611,9 @@ fn (mut e Engine) resolve_string(value string, src source.Source) !string {
 
 fn read_inline_name(text string, start int) (string, int) {
 	mut end := start
-	for end < text.len && ((text[end] >= `A` && text[end] <= `Z`) || (text[end] >= `a` && text[end] <= `z`) || (text[end] >= `0` && text[end] <= `9`) || text[end] == `_`) {
+	for end < text.len && ((text[end] >= `A` && text[end] <= `Z`)
+		|| (text[end] >= `a` && text[end] <= `z`)
+		|| (text[end] >= `0` && text[end] <= `9`) || text[end] == `_`) {
 		end++
 	}
 	if end == start {

@@ -91,14 +91,14 @@ pub fn run_file(path string, options RunOptions) !RunResult {
 	mut engine := new_engine(base_dir, options)
 	for key, value in options.vars {
 		engine.globals[key.to_upper()] = Binding{
-			value: string_value(value)
+			value:     string_value(value)
 			type_name: 'run'
 		}
 	}
 	program := engine.load_cached_program(resolved.path)!
 	engine.execute_program(program)!
 	return RunResult{
-		output: engine.output.str()
+		output:    engine.output.str()
 		exit_code: engine.exit_code
 	}
 }
@@ -117,25 +117,25 @@ pub fn run_text(text string, options RunOptions) !RunResult {
 	engine.register_functions(program)
 	engine.execute_program(program)!
 	return RunResult{
-		output: engine.output.str()
+		output:    engine.output.str()
 		exit_code: engine.exit_code
 	}
 }
 
 fn new_engine(base_dir string, options RunOptions) Engine {
 	return Engine{
-		current_dir: base_dir
-		start_dir: base_dir
+		current_dir:  base_dir
+		start_dir:    base_dir
 		command_line: options.command_line.clone()
 		emit_console: options.emit_console
-		stdin_lines: options.stdin_lines.clone()
-		options: EngineOptions{}
-		globals: map[string]Binding{}
-		scope_stack: []map[string]Binding{}
-		functions: map[string]ast.FunctionDecl{}
-		scripts: map[string]Program{}
-		dir_handles: map[int]DirState{}
-		output: strings.new_builder(1024)
+		stdin_lines:  options.stdin_lines.clone()
+		options:      EngineOptions{}
+		globals:      map[string]Binding{}
+		scope_stack:  []map[string]Binding{}
+		functions:    map[string]ast.FunctionDecl{}
+		scripts:      map[string]Program{}
+		dir_handles:  map[int]DirState{}
+		output:       strings.new_builder(1024)
 	}
 }
 
@@ -173,7 +173,7 @@ fn (mut e Engine) execute_program(program Program) ! {
 	}
 	mut frame := Frame{
 		program: program
-		kind: .script
+		kind:    .script
 	}
 	control := e.execute_frame(mut frame)!
 	if control.kind == .exit {
@@ -253,7 +253,8 @@ fn (mut e Engine) execute_stmt(stmt ast.Stmt, mut frame Frame) !Control {
 		}
 		ast.AssignStmt {
 			value := e.eval_expr(stmt.value, frame.program.source)!
-			e.assign(stmt.target, stmt.type_name, stmt.index, value, frame.program.source, stmt.span)!
+			e.assign(stmt.target, stmt.type_name, stmt.index, value, frame.program.source,
+				stmt.span)!
 			e.set_success('')
 		}
 		ast.DimStmt {
@@ -297,7 +298,8 @@ fn (mut e Engine) execute_stmt(stmt ast.Stmt, mut frame Frame) !Control {
 		}
 		ast.GetStmt {
 			input := e.read_input(stmt.line_mode)
-			e.assign(stmt.var_name, '', ast.EmptyExpr{}, string_value(input), frame.program.source, stmt.span)!
+			e.assign(stmt.var_name, '', ast.EmptyExpr{}, string_value(input), frame.program.source,
+				stmt.span)!
 			e.set_success('')
 		}
 		ast.IfStmt {
@@ -342,10 +344,15 @@ fn (mut e Engine) execute_stmt(stmt ast.Stmt, mut frame Frame) !Control {
 		ast.ForStmt {
 			start := (e.eval_expr(stmt.start, frame.program.source)!).as_i64()!
 			finish := (e.eval_expr(stmt.finish, frame.program.source)!).as_i64()!
-			step := if stmt.step is ast.EmptyExpr { i64(1) } else { (e.eval_expr(stmt.step, frame.program.source)!).as_i64()! }
+			step := if stmt.step is ast.EmptyExpr {
+				i64(1)
+			} else {
+				(e.eval_expr(stmt.step, frame.program.source)!).as_i64()!
+			}
 			mut current := start
 			for (step >= 0 && current <= finish) || (step < 0 && current >= finish) {
-				e.assign(stmt.var_name, '', ast.EmptyExpr{}, int_value(current), frame.program.source, stmt.span)!
+				e.assign(stmt.var_name, '', ast.EmptyExpr{}, int_value(current), frame.program.source,
+					stmt.span)!
 				control := e.execute_block(stmt.body, mut frame)!
 				if control.kind != .none {
 					return control
@@ -360,7 +367,8 @@ fn (mut e Engine) execute_stmt(stmt ast.Stmt, mut frame Frame) !Control {
 				return error(e.diag(frame.program.source, stmt.span, 'NX0302', 'FOR EACH expects an array'))
 			}
 			for item in iterable.array_value {
-				e.assign(stmt.var_name, '', ast.EmptyExpr{}, item, frame.program.source, stmt.span)!
+				e.assign(stmt.var_name, '', ast.EmptyExpr{}, item, frame.program.source,
+					stmt.span)!
 				control := e.execute_block(stmt.body, mut frame)!
 				if control.kind != .none {
 					return control
@@ -371,14 +379,14 @@ fn (mut e Engine) execute_stmt(stmt ast.Stmt, mut frame Frame) !Control {
 		ast.GotoStmt {
 			label := (e.eval_expr(stmt.label, frame.program.source)!).as_string()
 			return Control{
-				kind: .goto_label
+				kind:  .goto_label
 				label: label
 			}
 		}
 		ast.GosubStmt {
 			label := (e.eval_expr(stmt.label, frame.program.source)!).as_string()
 			return Control{
-				kind: .gosub_label
+				kind:  .gosub_label
 				label: label
 			}
 		}
@@ -397,7 +405,7 @@ fn (mut e Engine) execute_stmt(stmt ast.Stmt, mut frame Frame) !Control {
 				return error(e.diag(frame.program.source, stmt.span, 'NX0307', 'RESULT can only be used inside FUNCTION'))
 			}
 			return Control{
-				kind: .function_return
+				kind:  .function_return
 				value: value
 			}
 		}
@@ -410,9 +418,13 @@ fn (mut e Engine) execute_stmt(stmt ast.Stmt, mut frame Frame) !Control {
 			}
 		}
 		ast.ExitStmt {
-			code := if stmt.code is ast.EmptyExpr { 0 } else { int((e.eval_expr(stmt.code, frame.program.source)!).as_i64()!) }
+			code := if stmt.code is ast.EmptyExpr {
+				0
+			} else {
+				int((e.eval_expr(stmt.code, frame.program.source)!).as_i64()!)
+			}
 			return Control{
-				kind: .exit
+				kind:      .exit
 				exit_code: code
 			}
 		}
@@ -438,7 +450,8 @@ fn (mut e Engine) execute_call(script_name string, caller source.Source, span di
 }
 
 fn (mut e Engine) declare_local(decl ast.VarDecl, src source.Source) ! {
-	e.scope_stack[e.scope_stack.len - 1][decl.name.to_upper()] = e.build_decl_binding(decl, src)!
+	e.scope_stack[e.scope_stack.len - 1][decl.name.to_upper()] = e.build_decl_binding(decl,
+		src)!
 }
 
 fn (mut e Engine) declare_global(decl ast.VarDecl, src source.Source) ! {
@@ -460,7 +473,7 @@ fn (mut e Engine) build_decl_binding(decl ast.VarDecl, src source.Source) !Bindi
 	if decl.dimensions.len > 0 {
 		value := e.allocate_array(decl.dimensions, src)!
 		return Binding{
-			value: value
+			value:     value
 			type_name: explicit_type
 		}
 	}
@@ -468,22 +481,26 @@ fn (mut e Engine) build_decl_binding(decl ast.VarDecl, src source.Source) !Bindi
 	if decl.value !is ast.EmptyExpr {
 		initial := e.eval_expr(decl.value, src)!
 		target_type := if explicit_type != 'run' { explicit_type } else { infer_type_name(initial) }
-		coerced := if target_type == 'run' { initial } else { coerce_value_to_type(initial, target_type)! }
+		coerced := if target_type == 'run' {
+			initial
+		} else {
+			coerce_value_to_type(initial, target_type)!
+		}
 		return Binding{
-			value: coerced
+			value:     coerced
 			type_name: target_type
 		}
 	}
 
 	if explicit_type == 'run' {
 		return Binding{
-			value: empty_value()
+			value:     empty_value()
 			type_name: 'run'
 		}
 	}
 
 	return Binding{
-		value: default_value_for_type(explicit_type)!
+		value:     default_value_for_type(explicit_type)!
 		type_name: explicit_type
 	}
 }
@@ -518,7 +535,7 @@ fn (mut e Engine) assign(name string, type_name string, index_expr ast.Expr, val
 		}
 		updated[index] = value
 		e.store_binding(normalized, Binding{
-			value: array_value(updated)
+			value:     array_value(updated)
 			type_name: existing.type_name
 		})
 		return
@@ -534,9 +551,13 @@ fn (mut e Engine) assign(name string, type_name string, index_expr ast.Expr, val
 			if existing.type_name != 'run' && existing.type_name != normalized_type {
 				return error(e.diag(src, span, 'NX0502', 'variable `${name}` is already typed as `${existing.type_name}`'))
 			}
-			coerced := if normalized_type == 'run' { value } else { coerce_value_to_type(value, normalized_type)! }
+			coerced := if normalized_type == 'run' {
+				value
+			} else {
+				coerce_value_to_type(value, normalized_type)!
+			}
 			e.store_binding(normalized, Binding{
-				value: coerced
+				value:     coerced
 				type_name: normalized_type
 			})
 			return
@@ -546,23 +567,25 @@ fn (mut e Engine) assign(name string, type_name string, index_expr ast.Expr, val
 		} else {
 			existing.type_name
 		}
-		coerced := if target_type == 'run' { value } else { coerce_value_to_type(value, target_type)! }
+		coerced := if target_type == 'run' {
+			value
+		} else {
+			coerce_value_to_type(value, target_type)!
+		}
 		e.store_binding(normalized, Binding{
-			value: coerced
+			value:     coerced
 			type_name: target_type
 		})
 		return
 	}
 	target_type := if type_name.len > 0 {
-		normalize_type_name(type_name) or {
-			return error(e.diag(src, span, 'NX0501', err.msg()))
-		}
+		normalize_type_name(type_name) or { return error(e.diag(src, span, 'NX0501', err.msg())) }
 	} else {
 		infer_type_name(value)
 	}
 	coerced := if target_type == 'run' { value } else { coerce_value_to_type(value, target_type)! }
 	e.store_binding(normalized, Binding{
-		value: coerced
+		value:     coerced
 		type_name: target_type
 	})
 }
@@ -629,10 +652,26 @@ fn (mut e Engine) read_input(line_mode bool) string {
 	if e.stdin_index < e.stdin_lines.len {
 		line := e.stdin_lines[e.stdin_index]
 		e.stdin_index++
-		return if line_mode { line } else { if line.len > 0 { line[..1] } else { '' } }
+		return if line_mode {
+			line
+		} else {
+			if line.len > 0 {
+				line[..1]
+			} else {
+				''
+			}
+		}
 	}
 	line := os.get_line()
-	return if line_mode { line } else { if line.len > 0 { line[..1] } else { '' } }
+	return if line_mode {
+		line
+	} else {
+		if line.len > 0 {
+			line[..1]
+		} else {
+			''
+		}
+	}
 }
 
 fn (mut e Engine) set_success(result string) {

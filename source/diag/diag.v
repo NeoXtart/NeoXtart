@@ -41,12 +41,12 @@ pub fn (d Diagnostic) str() string {
 
 pub fn single_pos(line int, col int, offset int) Span {
 	pos := Pos{
-		line: line
-		col: col
+		line:   line
+		col:    col
 		offset: offset
 	}
 	return Span{
 		start: pos
-		end: pos
+		end:   pos
 	}
 }

@@ -1,7 +1,9 @@
-module lexer
+module lexer_test
 
 import source
+import tests.helpers
 import token
+import token.lexer
 
 fn compact_tokens(tokens []token.Token) []token.Token {
 	mut out := []token.Token{}
@@ -15,16 +17,16 @@ fn compact_tokens(tokens []token.Token) []token.Token {
 }
 
 fn test_tokenize_refs_comments_and_keywords() {
-	script := [
-		'; comment'
-		':Start'
-		'DiM ' + '$' + 'Name'
-		'$' + 'Name = "neo" + @DATE + %PATH%'
-		'/* block */'
-		''
-	].join('\n')
+	script := helpers.inline_script([
+		'; comment',
+		':Start',
+		'DiM ' + '$' + 'Name',
+		'$' + 'Name = "neo" + @DATE + %PATH%',
+		'/* block */',
+		'',
+	])
 	src := source.new('lexer_test.kix', script)
-	tokens := compact_tokens(tokenize(src) or { panic(err.msg()) })
+	tokens := compact_tokens(lexer.tokenize(src) or { panic(err.msg()) })
 
 	assert tokens.len == 10
 	assert tokens[0].kind == .label
@@ -43,4 +45,8 @@ fn test_tokenize_refs_comments_and_keywords() {
 	assert tokens[8].kind == .plus
 	assert tokens[9].kind == .env_ref
 	assert tokens[9].lexeme == '%PATH%'
+}
+
+fn test_lexer_helpers_inline_script_is_shared() {
+	assert helpers.inline_script(['a', 'b']) == 'a\nb'
 }

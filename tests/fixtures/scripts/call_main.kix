@@ -1,0 +1,3 @@
+$Value = "root"
+Call "call_child.kix"
+$Value

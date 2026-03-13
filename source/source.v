@@ -23,8 +23,8 @@ pub:
 
 pub fn new(path string, text string) Source {
 	return Source{
-		path: path
-		text: text
+		path:  path
+		text:  text
 		lines: text.split_into_lines()
 	}
 }
@@ -43,12 +43,12 @@ pub fn (src Source) line_text(line int) string {
 
 pub fn (src Source) diagnostic(code string, message string, span diag.Span, stack []string) diag.Diagnostic {
 	return diag.Diagnostic{
-		code: code
-		message: message
+		code:      code
+		message:   message
 		file_path: src.path
-		span: span
-		excerpt: src.line_text(span.start.line)
-		stack: stack
+		span:      span
+		excerpt:   src.line_text(span.start.line)
+		stack:     stack
 	}
 }
 

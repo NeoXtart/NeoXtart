@@ -65,10 +65,10 @@ pub:
 
 pub struct Parameter {
 pub:
-	name     string
+	name      string
 	type_name string
-	optional bool
-	span     diag.Span
+	optional  bool
+	span      diag.Span
 }
 
 pub struct LabelStmt {
@@ -161,7 +161,7 @@ pub:
 
 pub struct GetStmt {
 pub:
-	var_name string
+	var_name  string
 	line_mode bool
 	span      diag.Span
 }

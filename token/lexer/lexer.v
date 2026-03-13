@@ -16,7 +16,7 @@ mut:
 pub fn tokenize(src source.Source) ![]token.Token {
 	mut lexer := Lexer{
 		source: src
-		text: src.text
+		text:   src.text
 	}
 	return lexer.run()
 }
@@ -30,10 +30,10 @@ fn (mut l Lexer) run() ![]token.Token {
 	}
 	eof_span := diag.single_pos(l.line, l.col, l.index)
 	tokens << token.Token{
-		kind: .eof
+		kind:   .eof
 		lexeme: ''
-		upper: ''
-		span: eof_span
+		upper:  ''
+		span:   eof_span
 	}
 	return tokens
 }
@@ -56,9 +56,7 @@ fn (mut l Lexer) next_token() ?token.Token {
 			continue
 		}
 		if ch == `/` && l.peek(1) == `*` {
-			l.skip_block_comment() or {
-				panic(err.msg())
-			}
+			l.skip_block_comment() or { panic(err.msg()) }
 			continue
 		}
 		break
@@ -66,21 +64,51 @@ fn (mut l Lexer) next_token() ?token.Token {
 	start := l.mark()
 	ch := l.current()
 	match ch {
-		`?` { return l.simple_token(.question, '?') }
-		`,` { return l.simple_token(.comma, ',') }
-		`.` { return l.simple_token(.dot, '.') }
-		`:` { return l.scan_label_or_colon() }
-		`(` { return l.simple_token(.lpar, '(') }
-		`)` { return l.simple_token(.rpar, ')') }
-		`[` { return l.simple_token(.lsbr, '[') }
-		`]` { return l.simple_token(.rsbr, ']') }
-		`+` { return l.simple_token(.plus, '+') }
-		`-` { return l.simple_token(.minus, '-') }
-		`*` { return l.simple_token(.star, '*') }
-		`/` { return l.simple_token(.slash, '/') }
-		`~` { return l.simple_token(.tilde, '~') }
-		`^` { return l.simple_token(.caret, '^') }
-		`|` { return l.simple_token(.pipe, '|') }
+		`?` {
+			return l.simple_token(.question, '?')
+		}
+		`,` {
+			return l.simple_token(.comma, ',')
+		}
+		`.` {
+			return l.simple_token(.dot, '.')
+		}
+		`:` {
+			return l.scan_label_or_colon()
+		}
+		`(` {
+			return l.simple_token(.lpar, '(')
+		}
+		`)` {
+			return l.simple_token(.rpar, ')')
+		}
+		`[` {
+			return l.simple_token(.lsbr, '[')
+		}
+		`]` {
+			return l.simple_token(.rsbr, ']')
+		}
+		`+` {
+			return l.simple_token(.plus, '+')
+		}
+		`-` {
+			return l.simple_token(.minus, '-')
+		}
+		`*` {
+			return l.simple_token(.star, '*')
+		}
+		`/` {
+			return l.simple_token(.slash, '/')
+		}
+		`~` {
+			return l.simple_token(.tilde, '~')
+		}
+		`^` {
+			return l.simple_token(.caret, '^')
+		}
+		`|` {
+			return l.simple_token(.pipe, '|')
+		}
 		`&` {
 			if is_hex_digit(l.peek(1)) {
 				return l.scan_hex_number()
@@ -108,9 +136,15 @@ fn (mut l Lexer) next_token() ?token.Token {
 			}
 			return l.simple_token(.assign, '=')
 		}
-		`"`, `'` { return l.scan_string() }
-		`$` { return l.scan_var_ref() }
-		`@` { return l.scan_macro_ref() }
+		`"`, `'` {
+			return l.scan_string()
+		}
+		`$` {
+			return l.scan_var_ref()
+		}
+		`@` {
+			return l.scan_macro_ref()
+		}
 		`%` {
 			if l.can_scan_env_ref() {
 				return l.scan_env_ref()
@@ -136,8 +170,8 @@ struct Mark {
 
 fn (l Lexer) mark() Mark {
 	return Mark{
-		line: l.line
-		col: l.col
+		line:   l.line
+		col:    l.col
 		offset: l.index
 	}
 }
@@ -146,10 +180,10 @@ fn (mut l Lexer) simple_token(kind token.Kind, value string) token.Token {
 	start := l.mark()
 	l.advance()
 	return token.Token{
-		kind: kind
+		kind:   kind
 		lexeme: value
-		upper: value.to_upper()
-		span: span_from_mark(start, l.line, l.col, l.index)
+		upper:  value.to_upper()
+		span:   span_from_mark(start, l.line, l.col, l.index)
 	}
 }
 
@@ -158,10 +192,10 @@ fn (mut l Lexer) double_token(kind token.Kind, value string) token.Token {
 	l.advance()
 	l.advance()
 	return token.Token{
-		kind: kind
+		kind:   kind
 		lexeme: value
-		upper: value.to_upper()
-		span: span_from_mark(start, l.line, l.col, l.index)
+		upper:  value.to_upper()
+		span:   span_from_mark(start, l.line, l.col, l.index)
 	}
 }
 
@@ -170,18 +204,18 @@ fn (mut l Lexer) scan_label_or_colon() token.Token {
 	l.advance()
 	if !is_name_start(l.current()) {
 		return token.Token{
-			kind: .colon
+			kind:   .colon
 			lexeme: ':'
-			upper: ':'
-			span: span_from_mark(start, l.line, l.col, l.index)
+			upper:  ':'
+			span:   span_from_mark(start, l.line, l.col, l.index)
 		}
 	}
 	name := l.read_while(is_name_part)
 	return token.Token{
-		kind: .label
+		kind:   .label
 		lexeme: name
-		upper: name.to_upper()
-		span: span_from_mark(start, l.line, l.col, l.index)
+		upper:  name.to_upper()
+		span:   span_from_mark(start, l.line, l.col, l.index)
 	}
 }
 
@@ -195,16 +229,17 @@ fn (mut l Lexer) scan_string() token.Token {
 		if ch == quote {
 			l.advance()
 			return token.Token{
-				kind: .string
+				kind:   .string
 				lexeme: literal.bytestr()
-				upper: literal.bytestr()
-				span: span_from_mark(start, l.line, l.col, l.index)
+				upper:  literal.bytestr()
+				span:   span_from_mark(start, l.line, l.col, l.index)
 			}
 		}
 		literal << ch
 		l.advance()
 	}
-	panic(l.source.diagnostic('NX0002', 'unterminated string literal', span_from_mark(start, l.line, l.col, l.index), []).str())
+	panic(l.source.diagnostic('NX0002', 'unterminated string literal', span_from_mark(start,
+		l.line, l.col, l.index), []).str())
 }
 
 fn (mut l Lexer) scan_var_ref() token.Token {
@@ -217,10 +252,10 @@ fn (mut l Lexer) scan_var_ref() token.Token {
 	}
 	lexeme := '$' + name
 	return token.Token{
-		kind: .var_ref
+		kind:   .var_ref
 		lexeme: lexeme
-		upper: lexeme.to_upper()
-		span: span_from_mark(start, l.line, l.col, l.index)
+		upper:  lexeme.to_upper()
+		span:   span_from_mark(start, l.line, l.col, l.index)
 	}
 }
 
@@ -230,10 +265,10 @@ fn (mut l Lexer) scan_macro_ref() token.Token {
 	name := l.read_while(is_name_part)
 	lexeme := '@' + name
 	return token.Token{
-		kind: .macro_ref
+		kind:   .macro_ref
 		lexeme: lexeme
-		upper: lexeme.to_upper()
-		span: span_from_mark(start, l.line, l.col, l.index)
+		upper:  lexeme.to_upper()
+		span:   span_from_mark(start, l.line, l.col, l.index)
 	}
 }
 
@@ -268,10 +303,10 @@ fn (mut l Lexer) scan_env_ref() token.Token {
 	}
 	lexeme := '%' + name.bytestr() + '%'
 	return token.Token{
-		kind: .env_ref
+		kind:   .env_ref
 		lexeme: lexeme
-		upper: lexeme.to_upper()
-		span: span_from_mark(start, l.line, l.col, l.index)
+		upper:  lexeme.to_upper()
+		span:   span_from_mark(start, l.line, l.col, l.index)
 	}
 }
 
@@ -286,10 +321,10 @@ fn (mut l Lexer) scan_hex_number() token.Token {
 	}
 	text := value.bytestr()
 	return token.Token{
-		kind: .number
+		kind:   .number
 		lexeme: text
-		upper: text.to_upper()
-		span: span_from_mark(start, l.line, l.col, l.index)
+		upper:  text.to_upper()
+		span:   span_from_mark(start, l.line, l.col, l.index)
 	}
 }
 
@@ -325,10 +360,10 @@ fn (mut l Lexer) scan_number() token.Token {
 	}
 	text := value.bytestr()
 	return token.Token{
-		kind: .number
+		kind:   .number
 		lexeme: text
-		upper: text.to_upper()
-		span: span_from_mark(start, l.line, l.col, l.index)
+		upper:  text.to_upper()
+		span:   span_from_mark(start, l.line, l.col, l.index)
 	}
 }
 
@@ -336,10 +371,10 @@ fn (mut l Lexer) scan_name() token.Token {
 	start := l.mark()
 	text := l.read_while(is_name_part)
 	return token.Token{
-		kind: .name
+		kind:   .name
 		lexeme: text
-		upper: text.to_upper()
-		span: span_from_mark(start, l.line, l.col, l.index)
+		upper:  text.to_upper()
+		span:   span_from_mark(start, l.line, l.col, l.index)
 	}
 }
 
@@ -412,13 +447,13 @@ fn (l Lexer) is_eof_at(offset int) bool {
 fn span_from_mark(start Mark, end_line int, end_col int, end_offset int) diag.Span {
 	return diag.Span{
 		start: diag.Pos{
-			line: start.line
-			col: start.col
+			line:   start.line
+			col:    start.col
 			offset: start.offset
 		}
-		end: diag.Pos{
-			line: end_line
-			col: end_col
+		end:   diag.Pos{
+			line:   end_line
+			col:    end_col
 			offset: end_offset
 		}
 	}

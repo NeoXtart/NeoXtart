@@ -5,9 +5,13 @@ import source
 import source.diag
 import token
 
-const block_terminators = ['ELSE', 'ENDIF', 'CASE', 'ENDSELECT', 'LOOP', 'UNTIL', 'NEXT', 'ENDFUNCTION']
-const raw_command_names = ['DISPLAY', 'INCLUDE', 'RUN', 'SHELL', 'USE', 'PLAY', 'PASSWORD', 'SET', 'SETL', 'SETM', 'SETTIME']
-const statement_names = ['AT', 'BIG', 'BOX', 'BREAK', 'CALL', 'CLS', 'COLOR', 'DIM', 'DO', 'EXIT', 'FOR', 'FUNCTION', 'GET', 'GETS', 'GLOBAL', 'GOSUB', 'GOTO', 'IF', 'RESULT', 'RETURN', 'SELECT', 'SLEEP', 'SMALL', 'WHILE']
+const block_terminators = ['ELSE', 'ENDIF', 'CASE', 'ENDSELECT', 'LOOP', 'UNTIL', 'NEXT',
+	'ENDFUNCTION']
+const raw_command_names = ['DISPLAY', 'INCLUDE', 'RUN', 'SHELL', 'USE', 'PLAY', 'PASSWORD', 'SET',
+	'SETL', 'SETM', 'SETTIME']
+const statement_names = ['AT', 'BIG', 'BOX', 'BREAK', 'CALL', 'CLS', 'COLOR', 'DIM', 'DO', 'EXIT',
+	'FOR', 'FUNCTION', 'GET', 'GETS', 'GLOBAL', 'GOSUB', 'GOTO', 'IF', 'RESULT', 'RETURN', 'SELECT',
+	'SLEEP', 'SMALL', 'WHILE']
 const prefix_operators = ['NOT']
 const infix_operators = ['AND', 'OR', 'MOD', 'IS']
 const type_names = ['BOOL', 'F32', 'F64', 'I8', 'I16', 'I32', 'I64', 'INT', 'RUN', 'STR', 'STRING']
@@ -30,13 +34,17 @@ pub fn parse(src source.Source, tokens []token.Token) !ast.Script {
 fn (mut p Parser) parse_script() !ast.Script {
 	start := p.current().span
 	statements := p.parse_statement_list([]string{})!
-	end_span := if statements.len > 0 { ast.span_of_stmt(statements[statements.len - 1]) } else { start }
+	end_span := if statements.len > 0 {
+		ast.span_of_stmt(statements[statements.len - 1])
+	} else {
+		start
+	}
 	return ast.Script{
-		path: p.source.path
+		path:       p.source.path
 		statements: statements
-		span: diag.Span{
+		span:       diag.Span{
 			start: start.start
-			end: end_span.end
+			end:   end_span.end
 		}
 	}
 }
@@ -93,30 +101,78 @@ fn (mut p Parser) parse_statement() !ast.Stmt {
 fn (mut p Parser) parse_name_statement() !ast.Stmt {
 	name := p.current().upper
 	match name {
-		'IF' { return p.parse_if_stmt() }
-		'SELECT' { return p.parse_select_stmt() }
-		'WHILE' { return p.parse_while_stmt() }
-		'DO' { return p.parse_do_until_stmt() }
-		'FOR' { return p.parse_for_stmt() }
-		'FUNCTION' { return p.parse_function_decl() }
-		'DIM' { return p.parse_decl_stmt(false) }
-		'GLOBAL' { return p.parse_decl_stmt(true) }
-		'BREAK' { return p.parse_break_stmt() }
-		'CALL' { return p.parse_call_stmt() }
-		'CLS' { return p.parse_unit_stmt(ast.ClsStmt{span: p.current().span}) }
-		'BIG' { return p.parse_unit_stmt(ast.BigStmt{span: p.current().span}) }
-		'SMALL' { return p.parse_unit_stmt(ast.SmallStmt{span: p.current().span}) }
-		'COLOR' { return p.parse_color_stmt() }
-		'AT' { return p.parse_at_stmt() }
-		'BOX' { return p.parse_box_stmt() }
-		'GET' { return p.parse_get_stmt(false) }
-		'GETS' { return p.parse_get_stmt(true) }
-		'GOTO' { return p.parse_jump_stmt(false) }
-		'GOSUB' { return p.parse_jump_stmt(true) }
-		'RESULT' { return p.parse_result_stmt() }
-		'RETURN' { return p.parse_return_stmt() }
-		'EXIT' { return p.parse_exit_stmt() }
-		'SLEEP' { return p.parse_sleep_stmt() }
+		'IF' {
+			return p.parse_if_stmt()
+		}
+		'SELECT' {
+			return p.parse_select_stmt()
+		}
+		'WHILE' {
+			return p.parse_while_stmt()
+		}
+		'DO' {
+			return p.parse_do_until_stmt()
+		}
+		'FOR' {
+			return p.parse_for_stmt()
+		}
+		'FUNCTION' {
+			return p.parse_function_decl()
+		}
+		'DIM' {
+			return p.parse_decl_stmt(false)
+		}
+		'GLOBAL' {
+			return p.parse_decl_stmt(true)
+		}
+		'BREAK' {
+			return p.parse_break_stmt()
+		}
+		'CALL' {
+			return p.parse_call_stmt()
+		}
+		'CLS' {
+			return p.parse_unit_stmt(ast.ClsStmt{ span: p.current().span })
+		}
+		'BIG' {
+			return p.parse_unit_stmt(ast.BigStmt{ span: p.current().span })
+		}
+		'SMALL' {
+			return p.parse_unit_stmt(ast.SmallStmt{ span: p.current().span })
+		}
+		'COLOR' {
+			return p.parse_color_stmt()
+		}
+		'AT' {
+			return p.parse_at_stmt()
+		}
+		'BOX' {
+			return p.parse_box_stmt()
+		}
+		'GET' {
+			return p.parse_get_stmt(false)
+		}
+		'GETS' {
+			return p.parse_get_stmt(true)
+		}
+		'GOTO' {
+			return p.parse_jump_stmt(false)
+		}
+		'GOSUB' {
+			return p.parse_jump_stmt(true)
+		}
+		'RESULT' {
+			return p.parse_result_stmt()
+		}
+		'RETURN' {
+			return p.parse_return_stmt()
+		}
+		'EXIT' {
+			return p.parse_exit_stmt()
+		}
+		'SLEEP' {
+			return p.parse_sleep_stmt()
+		}
 		else {
 			if name in raw_command_names {
 				return p.parse_raw_command()
@@ -150,13 +206,13 @@ fn (mut p Parser) parse_assignment() !ast.Stmt {
 	p.expect(.assign)!
 	value := p.parse_assignment_value()!
 	return ast.AssignStmt{
-		target: target
+		target:    target
 		type_name: type_name
-		index: if has_index { index_expr } else { ast.EmptyExpr{} }
-		value: value
-		span: diag.Span{
+		index:     if has_index { index_expr } else { ast.EmptyExpr{} }
+		value:     value
+		span:      diag.Span{
 			start: start.start
-			end: ast.span_of_expr(value).end
+			end:   ast.span_of_expr(value).end
 		}
 	}
 }
@@ -184,17 +240,17 @@ fn (mut p Parser) parse_decl_stmt(is_global bool) !ast.Stmt {
 	}
 	span := diag.Span{
 		start: start.start
-		end: decls[decls.len - 1].span.end
+		end:   decls[decls.len - 1].span.end
 	}
 	if is_global {
 		return ast.GlobalStmt{
 			decls: decls
-			span: span
+			span:  span
 		}
 	}
 	return ast.DimStmt{
 		decls: decls
-		span: span
+		span:  span
 	}
 }
 
@@ -220,13 +276,13 @@ fn (mut p Parser) parse_var_decl() !ast.VarDecl {
 		value = p.parse_expression()!
 	}
 	return ast.VarDecl{
-		name: name_tok.lexeme
-		type_name: type_name
-		value: value
+		name:       name_tok.lexeme
+		type_name:  type_name
+		value:      value
 		dimensions: dimensions
-		span: diag.Span{
+		span:       diag.Span{
 			start: name_tok.span.start
-			end: if value !is ast.EmptyExpr {
+			end:   if value !is ast.EmptyExpr {
 				ast.span_of_expr(value).end
 			} else if dimensions.len > 0 {
 				ast.span_of_expr(dimensions[dimensions.len - 1]).end
@@ -245,9 +301,9 @@ fn (mut p Parser) parse_break_stmt() !ast.Stmt {
 	mode_tok := p.expect(.name)!
 	return ast.BreakStmt{
 		enabled: mode_tok.upper == 'ON'
-		span: diag.Span{
+		span:    diag.Span{
 			start: start.start
-			end: mode_tok.span.end
+			end:   mode_tok.span.end
 		}
 	}
 }
@@ -258,9 +314,9 @@ fn (mut p Parser) parse_call_stmt() !ast.Stmt {
 	script_expr := p.parse_expression()!
 	return ast.CallStmt{
 		script: script_expr
-		span: diag.Span{
+		span:   diag.Span{
 			start: start.start
-			end: ast.span_of_expr(script_expr).end
+			end:   ast.span_of_expr(script_expr).end
 		}
 	}
 }
@@ -292,10 +348,10 @@ fn (mut p Parser) parse_color_stmt() !ast.Stmt {
 		}
 	}
 	return ast.ColorStmt{
-		raw: parts.join('')
+		raw:  parts.join('')
 		span: diag.Span{
 			start: start.start
-			end: p.previous().span.end
+			end:   p.previous().span.end
 		}
 	}
 }
@@ -309,11 +365,11 @@ fn (mut p Parser) parse_at_stmt() !ast.Stmt {
 	col := p.parse_expression()!
 	p.expect(.rpar)!
 	return ast.AtStmt{
-		row: row
-		col: col
+		row:  row
+		col:  col
 		span: diag.Span{
 			start: start.start
-			end: p.previous().span.end
+			end:   p.previous().span.end
 		}
 	}
 }
@@ -333,14 +389,14 @@ fn (mut p Parser) parse_box_stmt() !ast.Stmt {
 	style := p.parse_expression()!
 	p.expect(.rpar)!
 	return ast.BoxStmt{
-		top: top
-		left: left
+		top:    top
+		left:   left
 		bottom: bottom
-		right: right
-		style: style
-		span: diag.Span{
+		right:  right
+		style:  style
+		span:   diag.Span{
 			start: start.start
-			end: p.previous().span.end
+			end:   p.previous().span.end
 		}
 	}
 }
@@ -350,11 +406,11 @@ fn (mut p Parser) parse_get_stmt(line_mode bool) !ast.Stmt {
 	p.advance()
 	name_tok := p.expect(.var_ref)!
 	return ast.GetStmt{
-		var_name: name_tok.lexeme
+		var_name:  name_tok.lexeme
 		line_mode: line_mode
-		span: diag.Span{
+		span:      diag.Span{
 			start: start.start
-			end: name_tok.span.end
+			end:   name_tok.span.end
 		}
 	}
 }
@@ -365,17 +421,17 @@ fn (mut p Parser) parse_jump_stmt(is_gosub bool) !ast.Stmt {
 	label_expr := p.parse_expression()!
 	span := diag.Span{
 		start: start.start
-		end: ast.span_of_expr(label_expr).end
+		end:   ast.span_of_expr(label_expr).end
 	}
 	if is_gosub {
 		return ast.GosubStmt{
 			label: label_expr
-			span: span
+			span:  span
 		}
 	}
 	return ast.GotoStmt{
 		label: label_expr
-		span: span
+		span:  span
 	}
 }
 
@@ -383,7 +439,8 @@ fn (mut p Parser) parse_return_stmt() !ast.Stmt {
 	start := p.current().span
 	p.advance()
 	if !p.should_end_statement() {
-		return error(p.diag('NX0104', 'RETURN does not accept a value; use RESULT [value] for function returns', p.current().span))
+		return error(p.diag('NX0104', 'RETURN does not accept a value; use RESULT [value] for function returns',
+			p.current().span))
 	}
 	return ast.ReturnStmt{
 		span: start
@@ -401,9 +458,9 @@ fn (mut p Parser) parse_result_stmt() !ast.Stmt {
 	value := p.parse_expression()!
 	return ast.ResultStmt{
 		value: value
-		span: diag.Span{
+		span:  diag.Span{
 			start: start.start
-			end: ast.span_of_expr(value).end
+			end:   ast.span_of_expr(value).end
 		}
 	}
 }
@@ -421,7 +478,7 @@ fn (mut p Parser) parse_exit_stmt() !ast.Stmt {
 		code: code_expr
 		span: diag.Span{
 			start: start.start
-			end: ast.span_of_expr(code_expr).end
+			end:   ast.span_of_expr(code_expr).end
 		}
 	}
 }
@@ -432,9 +489,9 @@ fn (mut p Parser) parse_sleep_stmt() !ast.Stmt {
 	duration := p.parse_expression()!
 	return ast.SleepStmt{
 		duration: duration
-		span: diag.Span{
+		span:     diag.Span{
 			start: start.start
-			end: ast.span_of_expr(duration).end
+			end:   ast.span_of_expr(duration).end
 		}
 	}
 }
@@ -458,9 +515,9 @@ fn (mut p Parser) parse_if_stmt() !ast.Stmt {
 		condition: condition
 		then_body: then_body
 		else_body: else_body
-		span: diag.Span{
+		span:      diag.Span{
 			start: start.start
-			end: end_tok.span.end
+			end:   end_tok.span.end
 		}
 	}
 }
@@ -490,9 +547,9 @@ fn (mut p Parser) parse_else_if_stmt() !ast.Stmt {
 		condition: condition
 		then_body: then_body
 		else_body: else_body
-		span: diag.Span{
+		span:      diag.Span{
 			start: start.start
-			end: end_pos
+			end:   end_pos
 		}
 	}
 }
@@ -508,19 +565,23 @@ fn (mut p Parser) parse_select_stmt() !ast.Stmt {
 		body := p.parse_statement_list(['CASE', 'ENDSELECT'])!
 		cases << ast.SelectCase{
 			condition: condition
-			body: body
-			span: diag.Span{
+			body:      body
+			span:      diag.Span{
 				start: case_tok.span.start
-				end: if body.len > 0 { ast.span_of_stmt(body[body.len - 1]).end } else { ast.span_of_expr(condition).end }
+				end:   if body.len > 0 {
+					ast.span_of_stmt(body[body.len - 1]).end
+				} else {
+					ast.span_of_expr(condition).end
+				}
 			}
 		}
 	}
 	end_tok := p.expect_name('ENDSELECT')!
 	return ast.SelectStmt{
 		cases: cases
-		span: diag.Span{
+		span:  diag.Span{
 			start: start.start
-			end: end_tok.span.end
+			end:   end_tok.span.end
 		}
 	}
 }
@@ -533,10 +594,10 @@ fn (mut p Parser) parse_while_stmt() !ast.Stmt {
 	end_tok := p.expect_name('LOOP')!
 	return ast.WhileStmt{
 		condition: condition
-		body: body
-		span: diag.Span{
+		body:      body
+		span:      diag.Span{
 			start: start.start
-			end: end_tok.span.end
+			end:   end_tok.span.end
 		}
 	}
 }
@@ -548,11 +609,11 @@ fn (mut p Parser) parse_do_until_stmt() !ast.Stmt {
 	p.expect_name('UNTIL')!
 	condition := p.parse_expression()!
 	return ast.DoUntilStmt{
-		body: body
+		body:      body
 		condition: condition
-		span: diag.Span{
+		span:      diag.Span{
 			start: start.start
-			end: ast.span_of_expr(condition).end
+			end:   ast.span_of_expr(condition).end
 		}
 	}
 }
@@ -577,13 +638,13 @@ fn (mut p Parser) parse_for_stmt() !ast.Stmt {
 	end_tok := p.expect_name('NEXT')!
 	return ast.ForStmt{
 		var_name: var_tok.lexeme
-		start: start_expr
-		finish: finish_expr
-		step: step_expr
-		body: body
-		span: diag.Span{
+		start:    start_expr
+		finish:   finish_expr
+		step:     step_expr
+		body:     body
+		span:     diag.Span{
 			start: start.start
-			end: end_tok.span.end
+			end:   end_tok.span.end
 		}
 	}
 }
@@ -598,10 +659,10 @@ fn (mut p Parser) parse_for_each_stmt(start diag.Span) !ast.Stmt {
 	return ast.ForEachStmt{
 		var_name: var_tok.lexeme
 		iterable: iterable
-		body: body
-		span: diag.Span{
+		body:     body
+		span:     diag.Span{
 			start: start.start
-			end: end_tok.span.end
+			end:   end_tok.span.end
 		}
 	}
 }
@@ -627,10 +688,10 @@ fn (mut p Parser) parse_function_decl() !ast.Stmt {
 					p.advance()
 				}
 				params << ast.Parameter{
-					name: param_tok.lexeme
+					name:      param_tok.lexeme
 					type_name: type_name
-					optional: optional
-					span: param_tok.span
+					optional:  optional
+					span:      param_tok.span
 				}
 				if p.match_kind(.comma) {
 					continue
@@ -643,12 +704,12 @@ fn (mut p Parser) parse_function_decl() !ast.Stmt {
 	body := p.parse_statement_list(['ENDFUNCTION'])!
 	end_tok := p.expect_name('ENDFUNCTION')!
 	return ast.FunctionDecl{
-		name: name_tok.lexeme
+		name:   name_tok.lexeme
 		params: params
-		body: body
-		span: diag.Span{
+		body:   body
+		span:   diag.Span{
 			start: start.start
-			end: end_tok.span.end
+			end:   end_tok.span.end
 		}
 	}
 }
@@ -666,10 +727,10 @@ fn (mut p Parser) parse_raw_command() !ast.Stmt {
 	}
 	return ast.RawCommandStmt{
 		name: start_tok.lexeme
-		raw: raw_parts.join(' ')
+		raw:  raw_parts.join(' ')
 		span: diag.Span{
 			start: start_tok.span.start
-			end: p.previous().span.end
+			end:   p.previous().span.end
 		}
 	}
 }
@@ -684,9 +745,9 @@ fn (mut p Parser) parse_assignment_value() !ast.Expr {
 		}
 		return ast.ArrayLiteralExpr{
 			items: items
-			span: diag.Span{
+			span:  diag.Span{
 				start: ast.span_of_expr(items[0]).start
-				end: ast.span_of_expr(items[items.len - 1]).end
+				end:   ast.span_of_expr(items[items.len - 1]).end
 			}
 		}
 	}
@@ -720,7 +781,7 @@ fn (mut p Parser) parse_prefix() !ast.Expr {
 		.number {
 			p.advance()
 			return ast.NumberLiteralExpr{
-				raw: current.lexeme
+				raw:  current.lexeme
 				span: current.span
 			}
 		}
@@ -728,17 +789,17 @@ fn (mut p Parser) parse_prefix() !ast.Expr {
 			p.advance()
 			return ast.StringLiteralExpr{
 				value: current.lexeme
-				span: current.span
+				span:  current.span
 			}
 		}
-			.var_ref {
-				p.advance()
-				mut expr := ast.Expr(ast.VarRefExpr{
-					name: current.lexeme
-					span: current.span
-				})
-				return p.parse_postfix(mut expr)
-			}
+		.var_ref {
+			p.advance()
+			mut expr := ast.Expr(ast.VarRefExpr{
+				name: current.lexeme
+				span: current.span
+			})
+			return p.parse_postfix(mut expr)
+		}
 		.macro_ref {
 			p.advance()
 			return ast.MacroRefExpr{
@@ -758,11 +819,11 @@ fn (mut p Parser) parse_prefix() !ast.Expr {
 				p.advance()
 				right := p.parse_precedence(7)!
 				return ast.UnaryExpr{
-					op: current.upper
+					op:    current.upper
 					right: right
-					span: diag.Span{
+					span:  diag.Span{
 						start: current.span.start
-						end: ast.span_of_expr(right).end
+						end:   ast.span_of_expr(right).end
 					}
 				}
 			}
@@ -777,11 +838,11 @@ fn (mut p Parser) parse_prefix() !ast.Expr {
 			p.advance()
 			right := p.parse_precedence(7)!
 			return ast.UnaryExpr{
-				op: current.lexeme
+				op:    current.lexeme
 				right: right
-				span: diag.Span{
+				span:  diag.Span{
 					start: current.span.start
-					end: ast.span_of_expr(right).end
+					end:   ast.span_of_expr(right).end
 				}
 			}
 		}
@@ -792,7 +853,8 @@ fn (mut p Parser) parse_prefix() !ast.Expr {
 			return p.parse_postfix(mut expr)
 		}
 		else {
-			return error(p.diag('NX0101', 'expected expression, found `${current.lexeme}`', current.span))
+			return error(p.diag('NX0101', 'expected expression, found `${current.lexeme}`',
+				current.span))
 		}
 	}
 }
@@ -822,10 +884,10 @@ fn (mut p Parser) parse_postfix(mut expr ast.Expr) !ast.Expr {
 				}
 				expr = ast.CallExpr{
 					callee: expr
-					args: args
-					span: diag.Span{
+					args:   args
+					span:   diag.Span{
 						start: ast.span_of_expr(expr).start
-						end: p.previous().span.end
+						end:   p.previous().span.end
 					}
 				}
 				continue
@@ -835,10 +897,10 @@ fn (mut p Parser) parse_postfix(mut expr ast.Expr) !ast.Expr {
 				name_tok := p.expect(.name)!
 				expr = ast.MemberExpr{
 					object: expr
-					name: name_tok.lexeme
-					span: diag.Span{
+					name:   name_tok.lexeme
+					span:   diag.Span{
 						start: ast.span_of_expr(expr).start
-						end: name_tok.span.end
+						end:   name_tok.span.end
 					}
 				}
 				continue
@@ -849,10 +911,10 @@ fn (mut p Parser) parse_postfix(mut expr ast.Expr) !ast.Expr {
 				p.expect(.rsbr)!
 				expr = ast.IndexExpr{
 					object: expr
-					index: index_expr
-					span: diag.Span{
+					index:  index_expr
+					span:   diag.Span{
 						start: ast.span_of_expr(expr).start
-						end: p.previous().span.end
+						end:   p.previous().span.end
 					}
 				}
 				continue
@@ -870,12 +932,12 @@ fn (mut p Parser) parse_infix(left ast.Expr, prec int) !ast.Expr {
 	p.advance()
 	right := p.parse_precedence(prec + 1)!
 	return ast.BinaryExpr{
-		left: left
-		op: op
+		left:  left
+		op:    op
 		right: right
-		span: diag.Span{
+		span:  diag.Span{
 			start: ast.span_of_expr(left).start
-			end: ast.span_of_expr(right).end
+			end:   ast.span_of_expr(right).end
 		}
 	}
 }
@@ -908,7 +970,8 @@ fn (p Parser) should_end_expression() bool {
 	if current.kind == .name && current.upper in block_terminators {
 		return true
 	}
-	if current.kind == .name && current.upper in statement_names && !current.upper.starts_with('AND') {
+	if current.kind == .name && current.upper in statement_names
+		&& !current.upper.starts_with('AND') {
 		return true
 	}
 	return false
@@ -943,7 +1006,8 @@ fn (mut p Parser) skip_expression_newlines() {
 }
 
 fn (p Parser) is_expression_joiner(tok token.Token) bool {
-	if tok.kind in [.plus, .minus, .star, .slash, .assign, .eq, .ne, .lt, .gt, .le, .ge, .amp, .pipe, .caret, .comma, .lpar, .lsbr] {
+	if tok.kind in [.plus, .minus, .star, .slash, .assign, .eq, .ne, .lt, .gt, .le, .ge, .amp,
+		.pipe, .caret, .comma, .lpar, .lsbr] {
 		return true
 	}
 	if tok.kind == .name && tok.upper in infix_operators {
@@ -974,7 +1038,8 @@ fn (mut p Parser) expect(kind token.Kind) !token.Token {
 fn (mut p Parser) expect_name(name string) !token.Token {
 	current := p.current()
 	if !current.is_name(name) {
-		return error(p.diag('NX0103', 'expected `${name}`, found `${current.lexeme}`', current.span))
+		return error(p.diag('NX0103', 'expected `${name}`, found `${current.lexeme}`',
+			current.span))
 	}
 	p.advance()
 	return current

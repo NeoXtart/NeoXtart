@@ -26,7 +26,7 @@ pub:
 
 pub fn empty_value() Value {
 	return Value{
-		kind: .empty
+		kind:      .empty
 		type_name: 'run'
 	}
 }
@@ -37,7 +37,7 @@ pub fn int_value(v i64) Value {
 
 pub fn typed_int_value(v i64, type_name string) Value {
 	return Value{
-		kind: .integer
+		kind:      .integer
 		type_name: type_name
 		int_value: v
 	}
@@ -49,40 +49,40 @@ pub fn double_value(v f64) Value {
 
 pub fn typed_double_value(v f64, type_name string) Value {
 	return Value{
-		kind: .double
-		type_name: type_name
+		kind:         .double
+		type_name:    type_name
 		double_value: v
 	}
 }
 
 pub fn string_value(v string) Value {
 	return Value{
-		kind: .string
-		type_name: 'str'
+		kind:         .string
+		type_name:    'str'
 		string_value: v
 	}
 }
 
 pub fn bool_value(v bool) Value {
 	return Value{
-		kind: .boolean
-		type_name: 'bool'
+		kind:       .boolean
+		type_name:  'bool'
 		bool_value: v
 	}
 }
 
 pub fn array_value(v []Value) Value {
 	return Value{
-		kind: .array
-		type_name: 'array'
+		kind:        .array
+		type_name:   'array'
 		array_value: v.clone()
 	}
 }
 
 pub fn object_placeholder(name string) Value {
 	return Value{
-		kind: .object
-		type_name: 'object'
+		kind:        .object
+		type_name:   'object'
 		object_name: name
 	}
 }
@@ -109,10 +109,22 @@ pub fn (v Value) truthy() bool {
 
 pub fn (v Value) as_i64() !i64 {
 	return match v.kind {
-		.empty { i64(0) }
-		.boolean { if v.bool_value { i64(1) } else { i64(0) } }
-		.integer { v.int_value }
-		.double { i64(v.double_value) }
+		.empty {
+			i64(0)
+		}
+		.boolean {
+			if v.bool_value {
+				i64(1)
+			} else {
+				i64(0)
+			}
+		}
+		.integer {
+			v.int_value
+		}
+		.double {
+			i64(v.double_value)
+		}
 		.string {
 			if v.string_value.len == 0 {
 				i64(0)
@@ -120,17 +132,33 @@ pub fn (v Value) as_i64() !i64 {
 				i64(v.string_value.f64())
 			}
 		}
-		.array { return error('array can not be used as integer') }
-		.object { return error('object can not be used as integer') }
+		.array {
+			return error('array can not be used as integer')
+		}
+		.object {
+			return error('object can not be used as integer')
+		}
 	}
 }
 
 pub fn (v Value) as_f64() !f64 {
 	return match v.kind {
-		.empty { f64(0.0) }
-		.boolean { if v.bool_value { f64(1.0) } else { f64(0.0) } }
-		.integer { f64(v.int_value) }
-		.double { v.double_value }
+		.empty {
+			f64(0.0)
+		}
+		.boolean {
+			if v.bool_value {
+				f64(1.0)
+			} else {
+				f64(0.0)
+			}
+		}
+		.integer {
+			f64(v.int_value)
+		}
+		.double {
+			v.double_value
+		}
 		.string {
 			if v.string_value.len == 0 {
 				f64(0.0)
@@ -138,16 +166,30 @@ pub fn (v Value) as_f64() !f64 {
 				v.string_value.f64()
 			}
 		}
-		.array { return error('array can not be used as double') }
-		.object { return error('object can not be used as double') }
+		.array {
+			return error('array can not be used as double')
+		}
+		.object {
+			return error('object can not be used as double')
+		}
 	}
 }
 
 pub fn (v Value) as_string() string {
 	return match v.kind {
-		.empty { '' }
-		.boolean { if v.bool_value { '1' } else { '0' } }
-		.integer { v.int_value.str() }
+		.empty {
+			''
+		}
+		.boolean {
+			if v.bool_value {
+				'1'
+			} else {
+				'0'
+			}
+		}
+		.integer {
+			v.int_value.str()
+		}
 		.double {
 			mut text := v.double_value.str()
 			if text.contains('.') {
@@ -155,9 +197,15 @@ pub fn (v Value) as_string() string {
 			}
 			text
 		}
-		.string { v.string_value }
-		.array { v.array_value.map(it.as_string()).join(',') }
-		.object { v.object_name }
+		.string {
+			v.string_value
+		}
+		.array {
+			v.array_value.map(it.as_string()).join(',')
+		}
+		.object {
+			v.object_name
+		}
 	}
 }
 
