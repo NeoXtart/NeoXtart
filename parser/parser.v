@@ -5,16 +5,71 @@ import source
 import source.diag
 import token
 
-const block_terminators = ['ELSE', 'ENDIF', 'CASE', 'ENDSELECT', 'LOOP', 'UNTIL', 'NEXT',
-	'ENDFUNCTION']
-const raw_command_names = ['DISPLAY', 'INCLUDE', 'RUN', 'SHELL', 'USE', 'PLAY', 'PASSWORD', 'SET',
-	'SETL', 'SETM', 'SETTIME']
-const statement_names = ['AT', 'BIG', 'BOX', 'BREAK', 'CALL', 'CLS', 'COLOR', 'DIM', 'DO', 'EXIT',
-	'FOR', 'FUNCTION', 'GET', 'GETS', 'GLOBAL', 'GOSUB', 'GOTO', 'IF', 'RESULT', 'RETURN', 'SELECT',
-	'SLEEP', 'SMALL', 'WHILE']
+const block_terminators = [
+	'ELSE',
+	'ENDIF',
+	'CASE',
+	'ENDSELECT',
+	'LOOP',
+	'UNTIL',
+	'NEXT',
+	'ENDFUNCTION',
+]
+const raw_command_names = [
+	'DISPLAY',
+	'INCLUDE',
+	'RUN',
+	'SHELL',
+	'USE',
+	'PLAY',
+	'PASSWORD',
+	'SET',
+	'SETL',
+	'SETM',
+	'SETTIME',
+]
+const statement_names = [
+	'BEEP',
+	'AT',
+	'BIG',
+	'BOX',
+	'BREAK',
+	'CALL',
+	'CLS',
+	'COLOR',
+	'DIM',
+	'DO',
+	'EXIT',
+	'FOR',
+	'FUNCTION',
+	'GET',
+	'GETS',
+	'GLOBAL',
+	'GOSUB',
+	'GOTO',
+	'IF',
+	'RESULT',
+	'RETURN',
+	'SELECT',
+	'SLEEP',
+	'SMALL',
+	'WHILE',
+]
 const prefix_operators = ['NOT']
 const infix_operators = ['AND', 'OR', 'MOD', 'IS']
-const type_names = ['BOOL', 'F32', 'F64', 'I8', 'I16', 'I32', 'I64', 'INT', 'RUN', 'STR', 'STRING']
+const type_names = [
+	'BOOL',
+	'F32',
+	'F64',
+	'I8',
+	'I16',
+	'I32',
+	'I64',
+	'INT',
+	'RUN',
+	'STR',
+	'STRING',
+]
 
 pub struct Parser {
 	source source.Source
@@ -172,6 +227,11 @@ fn (mut p Parser) parse_name_statement() !ast.Stmt {
 		}
 		'SLEEP' {
 			return p.parse_sleep_stmt()
+		}
+		'BEEP' {
+			start := p.current().span
+			p.advance()
+			return ast.BeepStmt{span: start}
 		}
 		else {
 			if name in raw_command_names {

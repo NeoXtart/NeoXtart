@@ -168,6 +168,9 @@ pub fn dump_stmt(stmt Stmt, level int) string {
 		SleepStmt {
 			'${pad}Sleep(${dump_expr(stmt.duration)})'
 		}
+		BeepStmt{
+			'${pad}Beep'
+		}
 		RawCommandStmt {
 			'${pad}RawCommand(${stmt.name}: ${stmt.raw})'
 		}

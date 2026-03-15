@@ -9,6 +9,8 @@ import parser
 import source
 import source.diag
 import token.lexer
+import platform.windows
+import platform.linux
 
 pub struct RunOptions {
 pub:
@@ -80,6 +82,8 @@ mut:
 	stdin_lines []string
 	stdin_index int
 	dir_handles map[int]DirState
+	window_lib  windows.WindowsLib
+	linux_lib   linux.LinuxLib
 }
 
 pub fn run_file(path string, options RunOptions) !RunResult {
@@ -432,6 +436,15 @@ fn (mut e Engine) execute_stmt(stmt ast.Stmt, mut frame Frame) !Control {
 			duration := (e.eval_expr(stmt.duration, frame.program.source)!).as_f64()!
 			time.sleep(time.Duration(i64(duration * f64(time.second))))
 			e.set_success('')
+		}
+		ast.BeepStmt {
+			println('emit_console=${e.emit_console}')
+			$if windows {
+				e.window_lib.beep(1000, 500)
+			} $else {
+				print('\a')
+			}
+			e.set_success('ok')
 		}
 		ast.RawCommandStmt {
 			return error(e.diag(frame.program.source, stmt.span, 'NX1001', 'command `${stmt.name}` is not implemented yet'))

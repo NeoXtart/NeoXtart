@@ -32,6 +32,7 @@ pub type Stmt = AssignStmt
 	| SleepStmt
 	| SmallStmt
 	| WhileStmt
+	| BeepStmt
 
 pub type Expr = ArrayLiteralExpr
 	| BinaryExpr
@@ -355,6 +356,11 @@ pub:
 	span  diag.Span
 }
 
+pub struct BeepStmt {
+pub:
+	span diag.Span
+}
+
 pub fn span_of_stmt(stmt Stmt) diag.Span {
 	return match stmt {
 		AssignStmt { stmt.span }
@@ -387,6 +393,7 @@ pub fn span_of_stmt(stmt Stmt) diag.Span {
 		SleepStmt { stmt.span }
 		SmallStmt { stmt.span }
 		WhileStmt { stmt.span }
+		BeepStmt{ stmt.span }
 	}
 }
 
